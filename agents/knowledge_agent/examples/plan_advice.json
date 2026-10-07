@@ -1,0 +1,19 @@
+{
+  "_comment": "Plan-fit advice. Apply the 'package' category filter (shared.intents.INTENT_CATEGORY) and end the answer with the suggestion disclaimer.",
+  "request": {
+    "conversation_id": "example-knowledge-2",
+    "sender_agent": "orchestrator",
+    "receiver_agent": "knowledge_agent",
+    "intent": "plan_advice",
+    "payload": {
+      "query": "I mostly stream video at home in the evenings, what plan suits me?",
+      "entities": {"phone": [], "amount": [], "date": ["the evenings"], "country": null, "package_name": null, "data_amount": null}
+    },
+    "auth_token": null
+  },
+  "expected_reply": {
+    "status": "ok",
+    "answer": "… recommendation with two reasons and [n] citations … This is a suggestion; check the details before switching.",
+    "sources": [{"id": 1, "title": "…", "url": "https://…", "chunk_id": "…"}]
+  }
+}

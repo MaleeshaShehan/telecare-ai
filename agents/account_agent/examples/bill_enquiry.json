@@ -1,0 +1,19 @@
+{
+  "_comment": "Bill question WITH a token. Replace auth_token with a real one from /auth/verify-otp, or use: python scripts/ping_agent.py account_agent --intent bill_enquiry --query '...' --token <token>",
+  "request": {
+    "conversation_id": "example-account-1",
+    "sender_agent": "orchestrator",
+    "receiver_agent": "account_agent",
+    "intent": "bill_enquiry",
+    "payload": {
+      "query": "Why is my bill higher this month?",
+      "entities": {"phone": [], "amount": [], "date": ["this month"], "country": null, "package_name": null, "data_amount": null}
+    },
+    "auth_token": "REPLACE_WITH_TOKEN"
+  },
+  "expected_reply": {
+    "status": "ok",
+    "answer": "Your bill went up by Rs. 1,200 … Data add-on 10GB on the 12th … base plan unchanged.",
+    "bill_diff": {"change": 1200, "drivers": [{"item": "Data add-on 10GB", "date": "2026-10-12", "amount": 1200}], "base_plan_changed": false}
+  }
+}

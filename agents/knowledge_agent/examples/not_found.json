@@ -1,0 +1,15 @@
+{
+  "_comment": "A question the corpus cannot answer. The right reply is not_found, never a guess.",
+  "request": {
+    "conversation_id": "example-knowledge-3",
+    "sender_agent": "orchestrator",
+    "receiver_agent": "knowledge_agent",
+    "intent": "tariff_query",
+    "payload": {
+      "query": "How much does a satellite phone subscription cost on the moon?",
+      "entities": {"phone": [], "amount": [], "date": [], "country": null, "package_name": null, "data_amount": null}
+    },
+    "auth_token": null
+  },
+  "expected_reply": {"status": "not_found", "reason": "retrieval_insufficient best_score=0.12"}
+}

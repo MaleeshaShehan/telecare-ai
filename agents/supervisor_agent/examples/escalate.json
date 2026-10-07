@@ -1,0 +1,26 @@
+{
+  "_comment": "Hand-off. Mask PII in history, summarise, create a ticket, return the apology with the real ticket id. Note the phone number in the history: it must not appear in the stored ticket.",
+  "request": {
+    "conversation_id": "example-supervisor-3",
+    "sender_agent": "orchestrator",
+    "receiver_agent": "supervisor_agent",
+    "intent": "complaint",
+    "payload": {
+      "task": "escalate",
+      "history": [
+        {"role": "user", "text": "Why is my bill higher this month? My number is 0712345678"},
+        {"role": "assistant", "text": "Your bill went up by Rs. 1,200 from a Data add-on 10GB on the 12th; your base plan is unchanged."},
+        {"role": "user", "text": "This is ridiculous, I've had billing problems for weeks!"}
+      ],
+      "reason": "vader<=-0.5",
+      "priority": "high"
+    },
+    "auth_token": null
+  },
+  "expected_reply": {
+    "status": "escalate",
+    "ticket_id": "T-1001",
+    "priority": "high",
+    "answer": "I'm sorry about the trouble. I've created ticket T-1001 with your full case details; a human agent will contact you within 24 hours."
+  }
+}

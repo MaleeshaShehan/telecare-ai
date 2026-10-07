@@ -1,0 +1,19 @@
+{
+  "_comment": "Exactly what the Orchestrator sends for a package question. Use: python scripts/ping_agent.py knowledge_agent --file agents/knowledge_agent/examples/package_info.json",
+  "request": {
+    "conversation_id": "example-knowledge-1",
+    "sender_agent": "orchestrator",
+    "receiver_agent": "knowledge_agent",
+    "intent": "package_info",
+    "payload": {
+      "query": "What is the cheapest 5GB anytime package?",
+      "entities": {"phone": [], "amount": [], "date": [], "country": null, "package_name": null, "data_amount": "5GB"}
+    },
+    "auth_token": null
+  },
+  "expected_reply": {
+    "status": "ok",
+    "answer": "…text with [1] citations…",
+    "sources": [{"id": 1, "title": "…", "url": "https://…", "chunk_id": "D001-2"}]
+  }
+}

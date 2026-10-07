@@ -1,0 +1,19 @@
+{
+  "_comment": "Quota question WITH a token.",
+  "request": {
+    "conversation_id": "example-account-2",
+    "sender_agent": "orchestrator",
+    "receiver_agent": "account_agent",
+    "intent": "quota_check",
+    "payload": {
+      "query": "How much data do I have left?",
+      "entities": {"phone": [], "amount": [], "date": [], "country": null, "package_name": null, "data_amount": null}
+    },
+    "auth_token": "REPLACE_WITH_TOKEN"
+  },
+  "expected_reply": {
+    "status": "ok",
+    "answer": "You have 6.5 GB left of your 20 GB allowance for October.",
+    "quota": {"used_gb": 13.5, "allowance_gb": 20, "period": "2026-10"}
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "_comment": "Neutral message. Must NOT escalate.",
+  "request": {
+    "conversation_id": "example-supervisor-2",
+    "sender_agent": "orchestrator",
+    "receiver_agent": "supervisor_agent",
+    "intent": "package_info",
+    "payload": {"task": "assess", "message": "What does the Anytime 5GB package include?", "intent": "package_info", "failed_count": 0},
+    "auth_token": null
+  },
+  "expected_reply": {"status": "ok", "sentiment": "neutral", "score": 0.0, "escalate": false, "reason": "none", "priority": "low"}
+}

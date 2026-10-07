@@ -1,0 +1,12 @@
+{
+  "_comment": "Strong negative sentiment. VADER compound should be <= -0.5 → escalate, priority high.",
+  "request": {
+    "conversation_id": "example-supervisor-1",
+    "sender_agent": "orchestrator",
+    "receiver_agent": "supervisor_agent",
+    "intent": "complaint",
+    "payload": {"task": "assess", "message": "This is ridiculous, I've had billing problems for weeks!", "intent": "complaint", "failed_count": 0},
+    "auth_token": null
+  },
+  "expected_reply": {"status": "ok", "sentiment": "negative", "score": -0.7, "escalate": true, "reason": "vader<=-0.5", "priority": "high"}
+}

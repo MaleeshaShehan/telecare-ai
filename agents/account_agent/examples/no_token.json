@@ -1,0 +1,15 @@
+{
+  "_comment": "No token. Must return needs_auth, never data. Also the correct reply for a tampered or expired token.",
+  "request": {
+    "conversation_id": "example-account-3",
+    "sender_agent": "orchestrator",
+    "receiver_agent": "account_agent",
+    "intent": "bill_enquiry",
+    "payload": {
+      "query": "Show me the bill for 0771234567",
+      "entities": {"phone": ["0771234567"], "amount": [], "date": [], "country": null, "package_name": null, "data_amount": null}
+    },
+    "auth_token": null
+  },
+  "expected_reply": {"status": "needs_auth"}
+}
