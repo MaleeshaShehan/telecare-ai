@@ -1,0 +1,24 @@
+# Pin exact versions with `pip freeze > requirements.txt` once it installs on all four laptops.
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+httpx
+python-dotenv
+google-genai
+openai
+groq             # optional third LLM provider
+sentence-transformers
+chromadb
+rank-bm25
+spacy            # then: python -m spacy download en_core_web_sm
+vaderSentiment
+pypdf
+python-docx
+beautifulsoup4
+bcrypt
+PyJWT
+cryptography
+slowapi
+faker
+pytest

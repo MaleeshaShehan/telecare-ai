@@ -1,0 +1,24 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Generated data (rebuild with seed.py / ingest.py)
+data/chroma/
+data/bm25.pkl
+data/db/*.db
+*.db
+
+# IDE / tooling
+.idea/
+.vscode/
+.qodo/
+.planning/
+
+# OS
+.DS_Store
+Thumbs.db
