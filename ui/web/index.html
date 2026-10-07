@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TeleCare AI</title>
+  <meta name="description" content="TeleCare AI: a four-agent tier-1 care desk for a telecom operator.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232dd4bf'/%3E%3Cpath d='M9 11h14M9 16h10M9 21h7' stroke='%23062b27' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- ───────────────────────── Left rail ───────────────────────── -->
+  <aside class="rail">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="22" height="22"><path d="M8 11h16M8 16h11M8 21h7" stroke="currentColor" stroke-width="3" stroke-linecap="round" fill="none"/></svg>
+      </div>
+      <div>
+        <div class="brand-name">TeleCare AI</div>
+        <div class="brand-sub">Tier-1 care desk</div>
+      </div>
+    </div>
+
+    <section class="card account" id="account" aria-label="Account"></section>
+
+    <section class="agents">
+      <h3 class="eyebrow">Agents</h3>
+      <ul id="agents" class="agent-list"></ul>
+    </section>
+
+    <div class="rail-footer">
+      <button id="theme" class="icon-btn" title="Toggle light / dark" aria-label="Toggle theme">
+        <svg class="ico-sun" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <svg class="ico-moon" viewBox="0 0 24 24" width="18" height="18"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+      </button>
+      <a href="console.html" class="link">Agent console →</a>
+    </div>
+  </aside>
+
+  <!-- ───────────────────────── Chat ───────────────────────── -->
+  <main class="chat">
+    <header class="chat-head">
+      <div>
+        <h1>Conversation</h1>
+        <p class="muted small">English only · answers from published operator documents</p>
+      </div>
+      <div class="head-actions">
+        <button id="newchat" class="ghost">New chat</button>
+        <button id="toggle-trace" class="ghost trace-toggle" aria-controls="trace" aria-expanded="true">Trace</button>
+      </div>
+    </header>
+
+    <div class="messages" id="messages" aria-live="polite">
+      <div class="empty" id="empty">
+        <div class="empty-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="28" height="28"><path d="M8 11h16M8 16h11M8 21h7" stroke="currentColor" stroke-width="3" stroke-linecap="round" fill="none"/></svg>
+        </div>
+        <span class="pill pill-ai">AI assistant</span>
+        <h2>Hi, I'm TeleCare's AI assistant.</h2>
+        <p class="muted">Ask about packages, roaming, coverage or troubleshooting. Log in to see your bill and data balance. Hard cases go to a human.</p>
+        <div class="chips">
+          <button class="chip" data-q="Why is my bill higher this month?">Why is my bill higher this month?</button>
+          <button class="chip" data-q="What is the cheapest 5GB package?">Cheapest 5GB package?</button>
+          <button class="chip" data-q="What are the roaming rates for India?">Roaming rates for India</button>
+          <button class="chip" data-q="I mostly stream video at home in the evenings. What plan suits me?">Which plan suits evening streaming?</button>
+        </div>
+      </div>
+    </div>
+
+    <form class="composer" id="composer" autocomplete="off">
+      <textarea id="input" rows="1" placeholder="Ask about packages, roaming, coverage, or your bill…" aria-label="Message"></textarea>
+      <button type="submit" id="send" class="send" aria-label="Send">
+        <svg viewBox="0 0 24 24" width="18" height="18"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </form>
+  </main>
+
+  <!-- ───────────────────────── Trace ───────────────────────── -->
+  <aside class="trace" id="trace">
+    <header class="trace-head">
+      <div>
+        <h2>Agent trace</h2>
+        <p class="muted small">Decisions and reasons. Never message text.</p>
+      </div>
+      <button class="icon-btn close-trace" id="close-trace" aria-label="Close trace">✕</button>
+    </header>
+    <ol class="timeline" id="timeline"></ol>
+    <div class="trace-empty" id="trace-empty">
+      <p class="muted">Send a message and watch the four agents decide.</p>
+    </div>
+    <footer class="legend" id="legend"></footer>
+  </aside>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<div class="scrim" id="scrim"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

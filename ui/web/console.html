@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agent Console · TeleCare AI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="page">
+  <header class="page-head">
+    <div>
+      <p class="eyebrow" style="margin-bottom:4px">Human agent console</p>
+      <h1 style="font-size:24px">Open tickets</h1>
+      <p class="muted small">Escalations from the Care Supervisor. Summaries are PII-masked. Refreshes every 10 seconds.</p>
+    </div>
+    <a class="ghost" href="index.html" style="text-decoration:none">← Back to chat</a>
+  </header>
+
+  <table class="table" id="table" hidden>
+    <thead>
+      <tr><th>Ticket</th><th>Opened</th><th>Priority</th><th>Issue</th><th>Mood</th><th>Status</th></tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div class="card empty-table" id="empty">
+    <p style="font-size:28px;margin-bottom:8px">🎫</p>
+    <h2>No open tickets</h2>
+    <p class="muted small" style="margin-top:6px">When a customer is escalated, their ticket appears here.</p>
+  </div>
+</div>
+
+<script>
+  const saved = localStorage.getItem("telecare_theme");
+  if (saved) document.documentElement.dataset.theme = saved;
+
+  const pill = (p) => ({ high: "pill-red", normal: "pill-amber", low: "pill-green" }[p] || "pill-amber");
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  async function load() {
+    let tickets = [];
+    try { tickets = await (await fetch("/tickets")).json(); } catch {}
+    const has = Array.isArray(tickets) && tickets.length > 0;
+    document.getElementById("table").hidden = !has;
+    document.getElementById("empty").hidden = has;
+    if (!has) return;
+    document.getElementById("rows").innerHTML = tickets.map((t, i) => `
+      <tr style="animation-delay:${i * 40}ms">
+        <td class="mono">${esc(t.ticket_id)}</td>
+        <td class="muted">${esc((t.created_at || "").replace("T", " ").slice(0, 16))}</td>
+        <td><span class="pill ${pill(t.priority)}">${esc(t.priority || "normal")}</span></td>
+        <td>${esc(t.issue || "")}</td>
+        <td class="muted">${esc(t.customer_mood || "")}</td>
+        <td><span class="pill pill-ai">${esc(t.status || "open")}</span></td>
+      </tr>`).join("");
+  }
+  load();
+  setInterval(load, 10000);
+</script>
+</body>
+</html>
