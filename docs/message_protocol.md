@@ -86,7 +86,7 @@ If assess returns anything other than `ok`, the Orchestrator logs
 
 | Path | Request | Replies |
 | --- | --- | --- |
-| POST /auth/login | `{msisdn, password}` | 200 `{otp_sent: true, channel: "simulated", debug_otp: "482913", expires_in: 300}` (UI shows the code) · 200 `{otp_sent: true, channel: "sms", expires_in: 300}` (real SMS, UI says check your phone) · 401 `{detail: "Invalid number or password"}` · 429 |
+| POST /auth/login | `{msisdn}` | 200 `{otp_sent: true, channel: "simulated", debug_otp: "482913", expires_in: 300}` in development · 200 `{otp_sent: true, channel: "sms", expires_in: 300}` with a real gateway · 400 invalid format · 429 rate limit · 503 delivery failure |
 | POST /auth/verify-otp | `{msisdn, otp}` | 200 `{token, expires_in: 900}` — the Orchestrator stores `token`; the browser only gets `{logged_in: true}` · 401 `{detail: "Code rejected"}` · 429 |
 
 The token is opaque to the Orchestrator and the UI. Only the Account Agent

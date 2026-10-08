@@ -16,7 +16,6 @@ CREATE TABLE IF NOT EXISTS subscribers (
     full_name_enc  TEXT NOT NULL,
     email_enc      TEXT NOT NULL,
     nic_enc        TEXT NOT NULL,
-    password_hash  TEXT NOT NULL,        -- bcrypt
     plan_id        INTEGER NOT NULL REFERENCES plans(plan_id)
 );
 

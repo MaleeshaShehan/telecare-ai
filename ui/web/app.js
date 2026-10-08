@@ -142,13 +142,11 @@ function renderAccount() {
       h("div", { class: "account-title" }, h("h3", null, "Your account"), h("span", { class: "pill" , style: "background:var(--surface-3);color:var(--muted)" }, "Logged out")),
       h("form", { onsubmit: onLogin },
         h("div", { class: "field" }, h("label", { for: "msisdn" }, "Mobile number"),
-          h("input", { id: "msisdn", class: "input", inputmode: "numeric", placeholder: "0712345678", required: "", autocomplete: "username" })),
-        h("div", { class: "field" }, h("label", { for: "password" }, "Password"),
-          h("input", { id: "password", class: "input", type: "password", required: "", autocomplete: "current-password" })),
-        h("button", { class: "btn block", type: "submit" }, "Log in"),
+          h("input", { id: "msisdn", class: "input", inputmode: "tel", placeholder: "0712345678", required: "", autocomplete: "tel", pattern: "(?:\\+94|0)7\\d{8}" })),
+        h("button", { class: "btn block", type: "submit" }, "Send verification code"),
         err,
       ),
-      h("p", { class: "muted small" }, "Needed only for bills and data balance. A one-time code is sent by simulated SMS."),
+      h("p", { class: "muted small" }, "We'll text a one-time code to verify your number. No password needed."),
     );
   } else if (a.stage === "otp") {
     el.account.replaceChildren(
@@ -176,9 +174,9 @@ function renderAccount() {
 }
 async function onLogin(e) {
   e.preventDefault();
-  const msisdn = $("msisdn").value.trim(), password = $("password").value;
+  const msisdn = $("msisdn").value.trim();
   const btn = e.target.querySelector("button[type=submit]"); btn.disabled = true;
-  const { code, data } = await api("/auth/login", { method: "POST", body: { conversation_id: state.cid, msisdn, password } });
+  const { code, data } = await api("/auth/login", { method: "POST", body: { conversation_id: state.cid, msisdn } });
   btn.disabled = false;
   if (code === 200) {
     state.auth = { stage: "otp", msisdn, error: "" };
@@ -190,7 +188,7 @@ async function onLogin(e) {
       toast({ kind: "sms", icon: "📱", title: "SMS sent", body: `A 6-digit code was sent to ${maskMsisdn(msisdn)}. Check your phone.`, ttl: 12000 });
     }
   } else {
-    state.auth.error = data.detail || "Login failed. Check your number and password.";
+    state.auth.error = data.detail || "We couldn't send a code to that number.";
     renderAccount();
   }
 }

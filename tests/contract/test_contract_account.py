@@ -54,16 +54,14 @@ def test_ok_payload_shapes():
 
 
 def test_login_endpoint_shape():
-    r = client.post("/auth/login", json={"msisdn": "0712345678", "password": "wrong"}, headers=KEY)
-    assert r.status_code in {200, 401, 429, 501}, r.text   # 501 while still a stub
+    r = client.post("/auth/login", json={"msisdn": "0712345678"}, headers=KEY)
+    assert r.status_code in {200, 429, 503}, r.text
     if r.status_code == 200:
         body = r.json()
         assert body.get("otp_sent") is True
         assert body.get("channel") in {"simulated", "sms"}
         if body["channel"] == "simulated":
             assert re.fullmatch(r"\d{6}", str(body.get("debug_otp", "")))
-    if r.status_code == 401:
-        assert r.json()["detail"] == "Invalid number or password"
 
 
 def test_verify_otp_endpoint_shape():
@@ -74,5 +72,5 @@ def test_verify_otp_endpoint_shape():
 
 
 def test_auth_endpoints_require_internal_key():
-    assert client.post("/auth/login", json={"msisdn": "x", "password": "y"}).status_code == 401
+    assert client.post("/auth/login", json={"msisdn": "x"}).status_code == 401
     assert client.post("/auth/verify-otp", json={"msisdn": "x", "otp": "y"}).status_code == 401

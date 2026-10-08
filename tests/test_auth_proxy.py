@@ -17,20 +17,20 @@ def _fake_account(responses: dict):
     return fake
 
 
-def test_login_forwards_only_credentials(monkeypatch, fresh_session):
+def test_login_forwards_only_mobile_number(monkeypatch, fresh_session):
     fake = _fake_account({"/auth/login": (200, {"otp_sent": True, "debug_otp": "123456"})})
     monkeypatch.setattr(main, "_proxy_account", fake)
-    r = client.post("/auth/login", json={"conversation_id": fresh_session, "msisdn": "0712345678", "password": "pw"})
+    r = client.post("/auth/login", json={"conversation_id": fresh_session, "msisdn": "0712345678"})
     assert r.status_code == 200
     assert r.json()["debug_otp"] == "123456"
-    assert fake.seen["/auth/login"] == {"msisdn": "0712345678", "password": "pw"}
+    assert fake.seen["/auth/login"] == {"msisdn": "0712345678"}
 
 
-def test_login_failure_passes_status_through(monkeypatch, fresh_session):
-    monkeypatch.setattr(main, "_proxy_account", _fake_account({"/auth/login": (401, {"detail": "invalid credentials"})}))
-    r = client.post("/auth/login", json={"conversation_id": fresh_session, "msisdn": "0712345678", "password": "bad"})
-    assert r.status_code == 401
-    assert r.json()["detail"] == "invalid credentials"
+def test_sms_failure_passes_status_through(monkeypatch, fresh_session):
+    monkeypatch.setattr(main, "_proxy_account", _fake_account({"/auth/login": (503, {"detail": "SMS unavailable"})}))
+    r = client.post("/auth/login", json={"conversation_id": fresh_session, "msisdn": "0712345678"})
+    assert r.status_code == 503
+    assert r.json()["detail"] == "SMS unavailable"
 
 
 def test_verify_otp_stores_token_in_session_not_in_response(monkeypatch, fresh_session):
@@ -63,5 +63,5 @@ def test_account_agent_down_gives_503(monkeypatch, fresh_session):
     def boom(*a, **k):
         raise httpx.ConnectError("refused")
     monkeypatch.setattr(main.httpx, "post", boom)
-    r = client.post("/auth/login", json={"conversation_id": fresh_session, "msisdn": "0712345678", "password": "pw"})
+    r = client.post("/auth/login", json={"conversation_id": fresh_session, "msisdn": "0712345678"})
     assert r.status_code == 503

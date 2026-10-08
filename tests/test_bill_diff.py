@@ -1,5 +1,4 @@
-"""bill_diff is pure Python. Owner: M3. Remove the skip when implemented."""
-import pytest
+"""Bill differences are deterministic and do not use an LLM."""
 
 from agents.account_agent.bill_diff import diff
 
@@ -9,7 +8,6 @@ THIS_ITEMS = [{"item_date": "2026-10-12", "type": "addon", "description": "Data 
 LAST_ITEMS: list[dict] = []
 
 
-@pytest.mark.xfail(raises=NotImplementedError, reason="M3 to implement", strict=True)
 def test_demo_story_add_on_on_the_12th():
     out = diff(THIS, LAST, THIS_ITEMS, LAST_ITEMS)
     assert out["change"] == 1200

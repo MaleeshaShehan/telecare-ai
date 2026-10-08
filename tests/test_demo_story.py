@@ -54,7 +54,7 @@ def test_demo_story(monkeypatch, fresh_session):
     assert r1["reply"].startswith("Hi, I'm TeleCare's AI assistant.")
 
     # 2. Login + OTP
-    assert client.post("/auth/login", json={"conversation_id": cid, "msisdn": "0712345678", "password": "demo"}).status_code == 200
+    assert client.post("/auth/login", json={"conversation_id": cid, "msisdn": "0712345678"}).status_code == 200
     assert client.post("/auth/verify-otp", json={"conversation_id": cid, "msisdn": "0712345678", "otp": "482913"}).json()["logged_in"]
 
     # 3. Same question, now answered from the account
