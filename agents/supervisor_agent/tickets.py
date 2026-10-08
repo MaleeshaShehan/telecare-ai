@@ -37,17 +37,29 @@ def init_db():
 def create_ticket(conversation_id: str, summary: dict, priority: str) -> str:
     init_db()
     with get_db() as conn:
-        # Parameterized SQL to prevent injection
-        cursor = conn.execute("SELECT MAX(id) FROM tickets")
-        max_id = cursor.fetchone()[0] or 1000
-        ticket_id = f"T-{max_id + 1}"
-        
+        # Read the numeric part of the last ticket_id (e.g. "T-1001" -> 1001)
+        # Use CAST + SUBSTR so it works whether the table is empty or not.
+        cursor = conn.execute(
+            "SELECT MAX(CAST(SUBSTR(ticket_id, 3) AS INTEGER)) FROM tickets"
+        )
+        last_num = cursor.fetchone()[0] or 1000
+        ticket_id = f"T-{last_num + 1}"
+
         created_at = datetime.now(timezone.utc).isoformat()
-        conn.execute("""
+        conn.execute(
+            """
             INSERT INTO tickets (ticket_id, created_at, priority, issue, customer_mood, conversation_id)
             VALUES (?, ?, ?, ?, ?, ?)
-        """, (ticket_id, created_at, priority, summary.get("issue", "No issue provided"), 
-              summary.get("customer_mood", "unknown"), conversation_id))
+            """,
+            (
+                ticket_id,
+                created_at,
+                priority,
+                summary.get("issue", "No issue provided"),
+                summary.get("customer_mood", "unknown"),
+                conversation_id,
+            ),
+        )
         conn.commit()
         return ticket_id
 
