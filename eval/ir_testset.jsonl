@@ -1,0 +1,28 @@
+{"q": "can i add my family to my postpaid power plan who gets to join", "doc_id": "DOC-002", "ref_id": "faq_power_family_001", "gold_snippet": null, "also_ok": ["faq_power_family_002"], "negative": false}
+{"q": "what package do extra supplementary numbers get in power plan family", "doc_id": "DOC-002", "ref_id": "faq_power_family_003", "gold_snippet": null, "also_ok": [], "negative": false}
+{"q": "what discount does the main member get in friend circle group", "doc_id": "DOC-002", "ref_id": "faq_friend_circle_002", "gold_snippet": null, "also_ok": [], "negative": false}
+{"q": "where on the dialog site or app can i check air fibre coverage for my address", "doc_id": "DOC-002", "ref_id": "faq_air_fibre_006", "gold_snippet": null, "also_ok": [], "negative": false}
+{"q": "what is the whatsapp number to check my home wifi router", "doc_id": "DOC-002", "ref_id": "faq_wifi_general_001", "gold_snippet": null, "also_ok": [], "negative": false}
+{"q": "can i still use fb and insta after my fiber hits the fup limit or will it only lag on streaming", "doc_id": "DOC-002", "ref_id": "faq_fibre_007", "gold_snippet": null, "also_ok": [], "negative": false}
+{"q": "some channels not showing on my tv box how to do a rescan with sms", "doc_id": "DOC-002", "ref_id": "faq_dialog_tv_003", "gold_snippet": null, "also_ok": [], "negative": false}
+{"q": "how much for the 65gb monthly home router package with tax", "doc_id": "DOC-001", "ref_id": "dialog_home_wifi_65gb", "gold_snippet": null, "also_ok": [], "negative": false}
+{"q": "is there an unlimited zoom and teams add on for prepaid home wifi router and how much is it", "doc_id": "DOC-001", "ref_id": "dialog_home_broadband_work_learn_lite_unlimited", "gold_snippet": null, "also_ok": [], "negative": false}
+{"q": "how much is the 100gb air fibre plan that comes with dialog play free", "doc_id": "DOC-001", "ref_id": "dialog_air_fibre_100gb", "gold_snippet": null, "also_ok": [], "negative": false}
+{"q": "what do u charge for 100mbps unlimited fiber connection per month", "doc_id": "DOC-001", "ref_id": "dialog_fibre_unlimited_100mbps", "gold_snippet": null, "also_ok": [], "negative": false}
+{"q": "pensioner postpaid package with 1000 dialog to dialog minutes how much monthly", "doc_id": "DOC-001", "ref_id": "dialog_prashansa_499", "gold_snippet": null, "also_ok": [], "negative": false}
+{"q": "prepaid plan with 2000 mins any network and 5gb for 30 days", "doc_id": "DOC-001", "ref_id": "dialog_triple_blaster_877", "gold_snippet": null, "also_ok": [], "negative": false}
+{"q": "i need 100gb anytime data reload on prepaid mobile sim for 30 days how much", "doc_id": "DOC-001", "ref_id": "dialog_anytime_ultra_2795", "gold_snippet": null, "also_ok": [], "negative": false}
+{"q": "traveling abroad tomorrow how much per day to get 2gb roaming data", "doc_id": "DOC-007", "ref_id": "DOC-007", "gold_snippet": "Daily Roaming Passport: USD 5.00 per day", "also_ok": [], "negative": false}
+{"q": "do i have to put down a cash deposit before traveling overseas with my postpaid number", "doc_id": "DOC-008", "ref_id": "DOC-008", "gold_snippet": "refundable security deposit of LKR 15,000", "also_ok": [], "negative": false}
+{"q": "my mobile wont connect in the usa which partner carrier should i pick manually", "doc_id": "DOC-009", "ref_id": "DOC-009", "gold_snippet": "United States: AT&T, T-Mobile USA", "also_ok": [], "negative": false}
+{"q": "why does my 4g drop to 3g after midnight in kandy and nuwara eliya", "doc_id": "DOC-010", "ref_id": "DOC-010", "gold_snippet": "temporary fallback to 3G connectivity", "also_ok": [], "negative": false}
+{"q": "high ping and lag when playing on european cod and valo game servers from colombo", "doc_id": "DOC-011", "ref_id": "DOC-011", "gold_snippet": "Higher latency (ping times > 180ms)", "also_ok": [], "negative": false}
+{"q": "any signal loss along galle road near kollupitiya late night this week", "doc_id": "DOC-012", "ref_id": "DOC-012", "gold_snippet": "localized signal attenuation and brief 30-second handover delays", "also_ok": [], "negative": false}
+{"q": "phone stuck on emergency calls only how to refresh cellular radio with flight mode", "doc_id": "DOC-013", "ref_id": "DOC-013", "gold_snippet": "Wait 15 seconds, then turn it off.", "also_ok": [], "negative": false}
+{"q": "mobile internet super slow whats the correct apn name to type in settings", "doc_id": "DOC-014", "ref_id": "DOC-014", "gold_snippet": "APN: dialogbb", "also_ok": [], "negative": false}
+{"q": "outgoing text msgs failing what is dialog smsc center number", "doc_id": "DOC-015", "ref_id": "DOC-015", "gold_snippet": "Ensure the number is set exactly to: +9477000003", "also_ok": [], "negative": false}
+{"q": "call ended tone immediately when dialing numbers how to cancel barring", "doc_id": "DOC-016", "ref_id": "DOC-016", "gold_snippet": "#33*0000# and press Call", "also_ok": [], "negative": false}
+{"q": "how much does dialog charge for a replacement sim if my card is damaged", "doc_id": "DOC-017", "ref_id": "DOC-017", "gold_snippet": "nominal fee of LKR 150", "also_ok": [], "negative": false}
+{"q": "how to activate mobitel one shot unlimited monthly package on prepaid", "doc_id": null, "ref_id": null, "gold_snippet": null, "also_ok": [], "negative": true}
+{"q": "what are the rental and data benefits for dialog power plan 5000", "doc_id": null, "ref_id": null, "gold_snippet": null, "also_ok": [], "negative": true}
+{"q": "can you give me a good recipe for sri lankan chicken kottu", "doc_id": null, "ref_id": null, "gold_snippet": null, "also_ok": [], "negative": true}
