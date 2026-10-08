@@ -16,7 +16,9 @@ from __future__ import annotations
 import csv
 import json
 import os
+import pickle
 import re
+import shutil
 from pathlib import Path
 from typing import Any, Optional
 
@@ -25,6 +27,26 @@ RAW_DIR = REPO_ROOT / "data" / "corpus" / "raw"
 PROCESSED_DIR = REPO_ROOT / "data" / "corpus" / "processed"
 MANIFEST_PATH = REPO_ROOT / "data" / "corpus" / "manifest.csv"
 CHUNKS_PATH = PROCESSED_DIR / "chunks.jsonl"
+CHROMA_DIR = REPO_ROOT / "data" / "chroma"
+BM25_PATH = REPO_ROOT / "data" / "bm25.pkl"
+
+COLLECTION_NAME = "telecom_knowledge"
+EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
+
+
+# ------------------------------------------------------------------ Tokenizer
+def tokenize_bm25(text: str) -> list[str]:
+    """Tokenize text preserving telco terms (e.g. 5gb, 4g, 100mbps, #678#, prices)."""
+    text = text.lower()
+    pattern = r"(?:#[0-9*#]+|[a-z0-9]+(?:[\.,][a-z0-9]+)*)"
+    raw_tokens = re.findall(pattern, text)
+    tokens: list[str] = []
+    for tok in raw_tokens:
+        clean_tok = tok.replace(",", "")
+        tokens.append(clean_tok)
+        if clean_tok != tok:
+            tokens.append(tok)
+    return tokens
 
 
 # ------------------------------------------------------------------ Helpers
@@ -51,7 +73,7 @@ def add_sentence(parts: list[str], text: str) -> None:
 
 
 def clean_guide_text(raw_text: str) -> str:
-    """Normalize whitespace and strip initial 'DOCUMENT ID:' and 'TITLE:' header lines."""
+    """Normalize whitespace and strip the initial 'DOCUMENT ID:' and 'TITLE:' header lines."""
     text = re.sub(r"\r\n", "\n", raw_text)
     text = re.sub(r"[ \t]+", " ", text)
     text = re.sub(r"\n{3,}", "\n\n", text)
@@ -94,6 +116,7 @@ def format_plan_text(sec_name: str, record: dict[str, Any], plan: dict[str, Any]
     p_type = plan.get("plan_type")
     cat = record.get("category") or record.get("product_name") or sec_name
 
+    # Clean up redundant words like "Plan", "Plans", "Packages"
     cat_clean = re.sub(r"(?i)\s+(plans?|packages?)$", "", str(cat)).strip()
     type_clean = re.sub(r"(?i)\s+(plans?|packages?)$", "", str(p_type)).strip() if p_type else ""
 
@@ -279,6 +302,7 @@ def generate_chunks() -> list[dict[str, Any]]:
                         "text": text,
                     })
             else:
+                # Record with no plans (exactly 1: dialog_mobile_postpaid_friend_circle)
                 title = clean_title(record.get("product_name") or record.get("category") or rec_id)
                 rec_parts: list[str] = []
                 if record.get("description"):
@@ -355,6 +379,7 @@ def generate_chunks() -> list[dict[str, Any]]:
 
         cleaned_text = clean_guide_text(raw_text)
 
+        # Write clean markdown for guides DOC-007 to DOC-017
         guide_md_path = PROCESSED_DIR / f"{doc_id}.md"
         with open(guide_md_path, "w", encoding="utf-8") as g_fp:
             g_fp.write(cleaned_text + "\n")
@@ -377,9 +402,85 @@ def generate_chunks() -> list[dict[str, Any]]:
     return chunks
 
 
+# ------------------------------------------------------------------ Chroma Indexing
+def build_chroma_index(chunks: list[dict[str, Any]]) -> int:
+    """Embed chunks using all-MiniLM-L6-v2 and store in persistent Chroma collection."""
+    import chromadb
+    from chromadb.config import Settings
+    from sentence_transformers import SentenceTransformer
+
+    # Make idempotent: clear existing Chroma directory
+    if CHROMA_DIR.exists():
+        shutil.rmtree(CHROMA_DIR)
+    CHROMA_DIR.mkdir(parents=True, exist_ok=True)
+
+    client = chromadb.PersistentClient(path=str(CHROMA_DIR), settings=Settings(anonymized_telemetry=False))
+    collection = client.create_collection(name=COLLECTION_NAME, metadata={"hnsw:space": "cosine"})
+
+    print(f"Loading embedding model: {EMBEDDING_MODEL_NAME}...")
+    model = SentenceTransformer(EMBEDDING_MODEL_NAME)
+
+    texts = [c["text"] for c in chunks]
+    ids = [c["chunk_id"] for c in chunks]
+    metadatas = [
+        {
+            "doc_id": c["doc_id"],
+            "chunk_id": c["chunk_id"],
+            "ref_id": c["ref_id"] or "",
+            "category": c["category"],
+            "title": c["title"],
+            "url": c["url"] or "",
+        }
+        for c in chunks
+    ]
+
+    print(f"Embedding {len(texts)} chunks with {EMBEDDING_MODEL_NAME}...")
+    embeddings = model.encode(texts, batch_size=32, show_progress_bar=False, normalize_embeddings=True).tolist()
+
+    collection.add(ids=ids, embeddings=embeddings, documents=texts, metadatas=metadatas)
+    count = collection.count()
+    print(f"Chroma collection '{COLLECTION_NAME}' created with {count} chunks.")
+    return count
+
+
+# ------------------------------------------------------------------ BM25 Indexing
+def build_bm25_index(chunks: list[dict[str, Any]]) -> int:
+    """Build BM25 index over chunks and save to data/bm25.pkl."""
+    from rank_bm25 import BM25Okapi
+
+    tokenized_corpus = [tokenize_bm25(c["text"]) for c in chunks]
+    bm25 = BM25Okapi(tokenized_corpus)
+
+    data = {
+        "chunks": chunks,
+        "bm25": bm25,
+        "tokenized_corpus": tokenized_corpus,
+    }
+
+    if BM25_PATH.exists():
+        BM25_PATH.unlink()
+
+    with open(BM25_PATH, "wb") as f:
+        pickle.dump(data, f)
+
+    print(f"BM25 index saved to {BM25_PATH} with {len(chunks)} chunks.")
+    return len(chunks)
+
+
+# ------------------------------------------------------------------ Main Entrypoint
 def main() -> None:
+    print("Generating chunks...")
     chunks = generate_chunks()
     print(f"Generated {len(chunks)} chunks in {CHUNKS_PATH}.")
+
+    # If --chunks-only flag or env var is set, don't build indexes
+    if os.environ.get("CHUNKS_ONLY") == "1":
+        print("CHUNKS_ONLY=1 set: skipping embedding and indexing.")
+        return
+
+    chroma_count = build_chroma_index(chunks)
+    bm25_count = build_bm25_index(chunks)
+    print(f"\nIngest complete: Chroma has {chroma_count} chunks, BM25 has {bm25_count} chunks.")
 
 
 if __name__ == "__main__":
