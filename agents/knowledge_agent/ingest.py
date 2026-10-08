@@ -120,11 +120,7 @@ def format_plan_text(sec_name: str, record: dict[str, Any], plan: dict[str, Any]
     cat_clean = re.sub(r"(?i)\s+(plans?|packages?)$", "", str(cat)).strip()
     type_clean = re.sub(r"(?i)\s+(plans?|packages?)$", "", str(p_type)).strip() if p_type else ""
 
-    if p_id == "dialog_prashansa_499":
-        add_sentence(parts, f"{p_name} (Plan ID: {p_id}) is a specialized Dialog mobile postpaid plan designed for retired government pensioners.")
-    elif p_id == "dialog_prashansa_1012":
-        add_sentence(parts, f"{p_name} (Plan ID: {p_id}) is a specialized Dialog mobile postpaid plan designed for retired government pensioners.")
-    elif type_clean and type_clean.lower() not in p_name.lower():
+    if type_clean and type_clean.lower() not in p_name.lower():
         add_sentence(parts, f"{p_name} (Plan ID: {p_id}) is a {type_clean} plan under Dialog {cat_clean}.")
     else:
         add_sentence(parts, f"{p_name} (Plan ID: {p_id}) is a Dialog {cat_clean} plan.")
@@ -179,11 +175,7 @@ def format_plan_text(sec_name: str, record: dict[str, Any], plan: dict[str, Any]
     if isinstance(v, dict):
         scope_raw = v.get("network_scope")
         scope = " and ".join(scope_raw) if isinstance(scope_raw, list) else (scope_raw or "")
-        if p_id == "dialog_prashansa_499":
-            add_sentence(parts, "Voice includes 1000 minutes to Any Network (including Dialog to Dialog and other networks).")
-        elif p_id == "dialog_prashansa_1012":
-            add_sentence(parts, "Voice includes unlimited calls to Any Network (including Dialog to Dialog and other networks).")
-        elif "included_minutes" in v:
+        if "included_minutes" in v:
             add_sentence(parts, f"Voice includes {v['included_minutes']} minutes ({scope}).")
         elif "type" in v:
             add_sentence(parts, f"Voice: {v['type']} ({scope}).")
@@ -230,7 +222,7 @@ def format_plan_text(sec_name: str, record: dict[str, Any], plan: dict[str, Any]
         if subs:
             ent_desc.append(f"({', '.join(subs)})")
         if ent_desc:
-            add_sentence(parts, f"Entertainment benefits: free {' '.join(ent_desc)}.")
+            add_sentence(parts, f"Entertainment benefits: {' '.join(ent_desc)}.")
 
     if plan.get("supported_applications"):
         apps = ", ".join(plan["supported_applications"])
