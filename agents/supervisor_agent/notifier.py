@@ -47,7 +47,7 @@ def send_ticket_email(ticket_id: str, summary: dict, priority: str,
 
     try:
         msg = MIMEMultipart()
-        msg["From"] = SMTP_USER
+        msg["From"] = f"TeleCare AI Supervisor <{SMTP_USER}>"
         msg["To"] = to_email
         msg["Subject"] = subject
         msg.attach(MIMEText(body, "plain"))
