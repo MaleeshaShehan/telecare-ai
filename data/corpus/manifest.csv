@@ -1,1 +1,14 @@
 doc_id,file,title,category,operator,source_url,retrieved_on
+DOC-001,dialog_telecom_master.json,Dialog Telecom Master Knowledge Base,package,Dialog Axiata,,2026-10-07
+DOC-002,dialog_faqs_full_structured_complete.json,Dialog Axiata Customer Support FAQs,mixed,Dialog Axiata,,
+DOC-007,DOC-007_roaming_global_data_passport.txt,Dialog Global Roaming Data Passport,roaming,Dialog,,
+DOC-008,DOC-008_roaming_activation_guide.txt,Dialog International Roaming Activation Guide,roaming,Dialog,,
+DOC-009,DOC-009_roaming_supported_destinations.txt,Dialog International Roaming Supported Partner Networks,roaming,Dialog,,
+DOC-010,DOC-010_advisory_hill_country_upgrade.txt,Dialog Network Advisory: Central Province 4G/5G Infrastructure Upgrade,coverage,Dialog,,October 2026
+DOC-011,DOC-011_advisory_subsea_cable_maintenance.txt,Dialog Network Advisory: South East Asia - Middle East - Western Europe (SMW) Subsea Cable Maintenance,coverage,Dialog,,October 2026
+DOC-012,DOC-012_advisory_colombo_metro_modernization.txt,Dialog Network Advisory: Colombo Commercial District Fiber Expansion,coverage,Dialog,,October 2026
+DOC-013,DOC-013_troubleshoot_no_signal.txt,Troubleshooting Guide: Resolving 'No Service' or Emergency Calls Only,troubleshooting,Dialog,,
+DOC-014,DOC-014_troubleshoot_slow_data.txt,Troubleshooting Guide: Resolving Slow Mobile Internet Speeds,troubleshooting,Dialog,,
+DOC-015,DOC-015_troubleshoot_sms_not_sending.txt,Troubleshooting Guide: Resolving SMS Sending and Receiving Failures,troubleshooting,Dialog,,
+DOC-016,DOC-016_troubleshoot_cant_make_calls.txt,Troubleshooting Guide: Unable to Place or Receive Voice Calls,troubleshooting,Dialog,,
+DOC-017,DOC-017_troubleshoot_sim_not_detected.txt,Troubleshooting Guide: Device Displays 'No SIM Card Detected',troubleshooting,Dialog,,
