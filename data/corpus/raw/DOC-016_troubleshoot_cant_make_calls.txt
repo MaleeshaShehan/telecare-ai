@@ -1,0 +1,24 @@
+DOCUMENT ID: DOC-016
+TITLE: Troubleshooting Guide: Unable to Place or Receive Voice Calls
+
+Overview:
+When outbound voice calls disconnect immediately with tones such as 'Call Ended', fast busy beeps, or incoming calls route straight to voicemail without ringing, follow this sequence of diagnostic steps.
+
+Step-by-Step Resolution:
+
+1. Check Outgoing Call Barring Settings:
+   Ensure call barring has not been activated on your line. Dial the standard GSM cancellation code: #33*0000# and press Call. This deactivates all outgoing barring restrictions using the default factory PIN (0000).
+
+2. Verify Call Forwarding Status:
+   If inbound callers report reaching voicemail or a dead line, disable forwarding diversions:
+   - Dial ##002# and press Send. This cancels all conditional and unconditional call diverts.
+
+3. Enable or Disable VoLTE (Voice over LTE):
+   Voice calls in modern networks require VoLTE. Navigate to Settings -> Mobile Networks -> VoLTE Calls -> Toggle ON. If VoLTE is already on and calls drop, toggle it OFF temporarily to route calls through standard 3G/2G circuit-switched fallback.
+
+4. Inspect Credit Balance and Outstanding Dues:
+   Prepaid customers: Dial #456# to verify account balance.
+   Postpaid customers: Dial #145# to check credit limit status. If your credit limit has been exceeded, outgoing calls are suspended until an interim payment is settled.
+
+5. Check 'Do Not Disturb' (DND) and Caller ID Settings:
+   Verify that 'Do Not Disturb' or Focus mode is turned off. Under Phone App Settings -> Additional Settings -> Caller ID -> ensure it is set to 'Network Default' or 'Show Number', as hiding your caller ID can cause carrier firewalls to reject outbound calls.

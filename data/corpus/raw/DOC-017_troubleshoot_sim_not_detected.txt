@@ -1,0 +1,19 @@
+DOCUMENT ID: DOC-017
+TITLE: Troubleshooting Guide: Device Displays 'No SIM Card Detected'
+
+Overview:
+When your smartphone displays 'No SIM', 'Insert SIM', or shows a SIM icon marked with an exclamation mark, the operating system hardware interface cannot establish an electrical connection with the chip.
+
+Step-by-Step Resolution:
+
+1. Clean and Re-insert the SIM Card:
+   Power down your phone completely before opening the tray. Eject the SIM holder carefully. Check for physical debris, lint, or moisture. Take a soft rubber pencil eraser or microfiber cloth and gently rub the metallic contact pads to remove oxidized residue. Re-seat the card firmly into the tray indentations and slide it back in gently without forcing.
+
+2. Inspect for Physical Damage:
+   Examine the card under good lighting. If the SIM is cracked, noticeably warped, bent, or if the plastic surrounding the copper contact is chipped, the internal microchip bond wire is broken and the SIM must be replaced.
+
+3. Test Secondary Slot or Alternate Device:
+   If your phone has Dual SIM capabilities, insert the SIM card into SIM Slot 2. If Slot 2 recognizes the card, Slot 1's internal connector pins may be damaged or bent. Alternatively, test the SIM in a different phone to isolate whether the fault lies with the SIM card or the phone hardware.
+
+4. Obtain a SIM Replacement (Same Number):
+   If the SIM is unresponsive across multiple devices, visit any Dialog Experience Center or authorized franchisee. Bring your National Identity Card (NIC) or Passport. A replacement SIM card can be issued within 10 minutes, retaining your current phone number, package balance, and account history for a nominal fee of LKR 150 (free of charge for high-tier club members).

@@ -1,0 +1,22 @@
+DOCUMENT ID: DOC-013
+TITLE: Troubleshooting Guide: Resolving 'No Service' or Emergency Calls Only
+
+Overview:
+When your mobile phone displays 'No Service', 'Emergency Calls Only', or an empty signal bar indicator, follow these technical troubleshooting steps to restore communication with the Dialog network.
+
+Step-by-Step Resolution:
+
+1. Toggle Airplane Mode:
+   Swipe down the notification shade (Android) or Control Center (iOS) and turn on Airplane Mode. Wait 15 seconds, then turn it off. This forces the device baseband processor to clear stale network tables and initiate a fresh handshake with nearby towers.
+
+2. Reboot the Device:
+   Power down your phone completely for 30 seconds and restart it. This resets cellular radio firmware and re-reads the SIM card encryption keys.
+
+3. Verify Physical SIM Placement:
+   Eject the SIM tray using a SIM-ejector tool. Inspect the golden contact pins on the SIM card for physical scratches, dirt, or dust. Gently wipe the chip using a clean, dry microfiber cloth and reseat it securely in the tray.
+
+4. Check Manual Network Selection:
+   Navigate to Settings -> Mobile Networks -> Network Operators. Toggle off 'Automatic' and wait for the carrier list to populate. Select 'Dialog' or '413 02' (Dialog PLMN code). Once connected, return the toggle back to 'Automatic'.
+
+5. Test SIM in Another Handset:
+   Insert your SIM into another unlocked mobile device. If signal is restored immediately, your phone's internal antenna or modem hardware may require service. If the second phone also shows 'No Service', visit a Dialog service outlet for a complimentary SIM replacement.
