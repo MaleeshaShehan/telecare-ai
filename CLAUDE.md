@@ -29,6 +29,8 @@ Read it before starting any new component.
   a SELECT-only role for the agent's connection. OTP hashes go in a separate writable
   store (`auth.db` or a table). Each builder chooses SQLite or Supabase; tests must
   pass offline either way.
+- Login is passwordless: a known mobile number requests a backend-generated SMS OTP.
+  OTPs are hashed, expire after five minutes, allow three attempts, and are single-use.
 - The subscriber ID always comes from the verified JWT, never from message text.
 - All SQL is parameterised (`?`). No string-built SQL anywhere.
 - Bill numbers are computed in Python (`bill_diff.py`); the LLM only phrases them.

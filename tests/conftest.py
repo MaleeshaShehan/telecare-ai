@@ -6,6 +6,7 @@ import pytest
 
 os.environ["LLM_PROVIDER"] = "mock"
 os.environ.setdefault("INTERNAL_API_KEY", "test-internal-key")
+os.environ["ACCOUNT_DB_BACKEND"] = "sqlite"
 
 
 @pytest.fixture(autouse=True)

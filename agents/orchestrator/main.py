@@ -2,7 +2,7 @@
 
 Endpoints:
     POST /chat              {conversation_id, message} -> {reply, status, sources, trace}
-    POST /auth/login        {conversation_id, msisdn, password}  proxied to the Account Agent
+    POST /auth/login        {conversation_id, msisdn}            requests OTP from Account Agent
     POST /auth/verify-otp   {conversation_id, msisdn, otp}       proxied; token kept server-side
     POST /auth/logout       {conversation_id}
     GET  /auth/status       ?conversation_id=  -> {logged_in}
@@ -60,7 +60,6 @@ class ChatRequest(BaseModel):
 class LoginRequest(BaseModel):
     conversation_id: str
     msisdn: str
-    password: str
 
 
 class OtpRequest(BaseModel):
@@ -102,7 +101,7 @@ def _proxy_account(path: str, body: dict) -> tuple[int, dict]:
 
 @app.post("/auth/login")
 def login(req: LoginRequest) -> JSONResponse:
-    code, data = _proxy_account("/auth/login", {"msisdn": req.msisdn, "password": req.password})
+    code, data = _proxy_account("/auth/login", {"msisdn": req.msisdn})
     log_decision(req.conversation_id, "orchestrator", "login_proxied", f"http={code}")
     return JSONResponse(status_code=code, content=data)
 

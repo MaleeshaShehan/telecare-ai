@@ -30,12 +30,17 @@ class Settings(BaseSettings):
     otp_ttl_seconds: int = 300
 
     # Optional per-agent infrastructure. Each builder decides whether to use these.
+    account_db_backend: str = "sqlite"  # sqlite | supabase
     supabase_url: str = ""          # empty -> the agent uses its local SQLite path
     supabase_key: str = ""          # service role key, server-side only, never to the browser
     sms_provider: str = "simulated"  # simulated | http   (Account Agent OTP channel)
     sms_gateway_url: str = ""        # the member's SMS gateway endpoint (POST number + text)
     sms_gateway_key: str = ""
     sms_sender_id: str = "TeleCare"
+    sms_gateway_auth_header: str = "Authorization"
+    sms_gateway_recipient_field: str = "to"
+    sms_gateway_message_field: str = "message"
+    sms_gateway_sender_field: str = "sender_id"
 
     # Retrieval
     retrieval_min_similarity: float = 0.35

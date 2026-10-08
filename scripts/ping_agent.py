@@ -4,7 +4,7 @@ validate the reply. Lets a builder test their agent without the Orchestrator or 
 Examples
     python scripts/ping_agent.py knowledge_agent --intent package_info --query "cheapest 5GB anytime package"
     python scripts/ping_agent.py knowledge_agent --file agents/knowledge_agent/examples/plan_advice.json
-    python scripts/ping_agent.py account_agent --login 0712345678 demo1234
+    python scripts/ping_agent.py account_agent --login 0712345678
     python scripts/ping_agent.py account_agent --otp 0712345678 482913
     python scripts/ping_agent.py account_agent --intent bill_enquiry --query "why is my bill higher" --token eyJ...
     python scripts/ping_agent.py supervisor_agent --task assess --message "This is ridiculous!"
@@ -120,14 +120,14 @@ def main() -> int:
     p.add_argument("--message", help="payload.message for assess (supervisor)")
     p.add_argument("--failed-count", type=int, default=0)
     p.add_argument("--file", help="JSON file with a 'request' object (see agents/*/examples)")
-    p.add_argument("--login", nargs=2, metavar=("MSISDN", "PASSWORD"), help="call /auth/login (account)")
+    p.add_argument("--login", metavar="MSISDN", help="request an OTP from /auth/login (account)")
     p.add_argument("--otp", nargs=2, metavar=("MSISDN", "CODE"), help="call /auth/verify-otp (account)")
     p.add_argument("--tickets", action="store_true", help="GET /tickets (supervisor)")
     a = p.parse_args()
 
     # --- auth helpers ---------------------------------------------------
     if a.login:
-        code, data = post(a.agent, "/auth/login", {"msisdn": a.login[0], "password": a.login[1]})
+        code, data = post(a.agent, "/auth/login", {"msisdn": a.login})
         print(f"HTTP {code}\n{json.dumps(data, indent=2)}")
         if code == 200:
             good = data.get("otp_sent") is True and data.get("channel") in ("simulated", "sms")

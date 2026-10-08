@@ -174,10 +174,10 @@ Done: everything in section 5 marked M1. Remaining:
 
 ### M3 — Account Agent + security
 
-- [ ] `data/db/seed.py`: 40 Faker subscribers, two bill periods, ~1/3 with a change; **demo subscriber** with Rs. 1,200 "Data add-on 10GB" on the 12th and a documented password; Fernet-encrypted name/email/NIC; bcrypt hashes. Creates empty `auth.db`, `tickets.db`.
+- [x] `data/db/seed.py`: 40 Faker subscribers, two bill periods, ~1/3 with a change; **demo subscriber** with Rs. 1,200 "Data add-on 10GB" on the 12th; Fernet-encrypted name/email/NIC. Login is passwordless.
 - [ ] `bill_diff.py` until `tests/test_bill_diff.py` passes (remove the xfail).
 - [ ] `repository.py`: read-only connection, parameterised queries filtered by subscriber_id.
-- [ ] `auth.py` + real `/auth/login` (bcrypt, same error for bad number/password, 5/min) and `/auth/verify-otp` (hashed OTP, 5-min expiry, 3 attempts → JWT). Return `debug_otp` in login response for the simulated-SMS box.
+- [x] `auth.py` + number-only `/auth/login` (5/min, no account enumeration) and `/auth/verify-otp` (bcrypt-hashed OTP, 5-min expiry, 3 attempts, single-use → JWT). Real HTTP SMS fails closed; development simulation is explicit.
 - [ ] `auth.py`: `issue_jwt`, `verify_jwt` (HS256, 15 min) or Supabase Auth token verification; Fernet `encrypt`/`decrypt` for name/email/NIC. (Lives in the Account Agent, not `shared/`.)
 - [ ] Choose SQLite or Supabase and the OTP channel (simulated / real SMS with simulated fallback). See `agents/account_agent/README.md` §5–6.
 - [ ] `/handle`: verify JWT → subscriber_id → bill_enquiry (diff + LLM phrasing, return `bill_diff` in payload for the UI card) · quota_check (return `quota: {used_gb, allowance_gb}`).
@@ -204,7 +204,7 @@ Full detail with JSON examples: `docs/message_protocol.md`.
 - **Intents**: package_info, tariff_query, roaming_advice, coverage_or_outage_info, troubleshooting, plan_advice → Knowledge · bill_enquiry, quota_check → Account (login) · complaint → Supervisor · out_of_scope → Orchestrator.
 - **Supervisor tasks**: `assess {message, intent, failed_count}` → `{sentiment, score, escalate, reason, priority}` · `escalate {history, reason, priority}` → `{ticket_id, answer}`.
 - **Escalation rules**: VADER ≤ −0.5 → high; borderline → LLM confirm; "human/agent/manager/call me" → normal; intent complaint → always; 2 consecutive not_found/error → normal.
-- **Auth**: `POST /auth/login {msisdn, password}` → `{otp_sent, debug_otp}` · `POST /auth/verify-otp {msisdn, otp}` → `{token}`. The Orchestrator stores the token; the browser gets `{logged_in: true}` only.
+- **Auth**: `POST /auth/login {msisdn}` → `{otp_sent, channel}` · `POST /auth/verify-otp {msisdn, otp}` → `{token}`. The Orchestrator stores the token; the browser gets `{logged_in: true}` only.
 - **UI cards**: any extra payload keys reach the UI as `extra`. Recognised: `bill_diff {change, drivers[{item,date,amount}], base_plan_changed}`, `quota {used_gb, allowance_gb}`, `ticket_id`, `priority`.
 - **Audit**: `log_decision(conversation_id, agent, decision, reason)`. Never message text.
 
