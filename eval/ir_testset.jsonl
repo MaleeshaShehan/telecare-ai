@@ -6,10 +6,10 @@
 {"q": "can i still use fb and insta after my fiber hits the fup limit or will it only lag on streaming", "doc_id": "DOC-002", "ref_id": "faq_fibre_007", "gold_snippet": null, "also_ok": [], "negative": false}
 {"q": "some channels not showing on my tv box how to do a rescan with sms", "doc_id": "DOC-002", "ref_id": "faq_dialog_tv_003", "gold_snippet": null, "also_ok": [], "negative": false}
 {"q": "how much for the 65gb monthly home router package with tax", "doc_id": "DOC-001", "ref_id": "dialog_home_wifi_65gb", "gold_snippet": null, "also_ok": [], "negative": false}
-{"q": "is there an unlimited zoom and teams add on for prepaid home wifi router and how much is it", "doc_id": "DOC-001", "ref_id": "dialog_home_broadband_work_learn_lite_unlimited", "gold_snippet": null, "also_ok": [], "negative": false}
+{"q": "is there an unlimited zoom and office 365 add on for prepaid home wifi router and how much is it", "doc_id": "DOC-001", "ref_id": "dialog_home_broadband_work_learn_lite_unlimited", "gold_snippet": null, "also_ok": [], "negative": false}
 {"q": "how much is the 100gb air fibre plan that comes with dialog play free", "doc_id": "DOC-001", "ref_id": "dialog_air_fibre_100gb", "gold_snippet": null, "also_ok": [], "negative": false}
 {"q": "what do u charge for 100mbps unlimited fiber connection per month", "doc_id": "DOC-001", "ref_id": "dialog_fibre_unlimited_100mbps", "gold_snippet": null, "also_ok": [], "negative": false}
-{"q": "pensioner postpaid package with 1000 dialog to dialog minutes how much monthly", "doc_id": "DOC-001", "ref_id": "dialog_prashansa_499", "gold_snippet": null, "also_ok": [], "negative": false}
+{"q": "pensioner postpaid package with 1000 minutes 1000 sms and 5gb how much monthly", "doc_id": "DOC-001", "ref_id": "dialog_prashansa_499", "gold_snippet": null, "also_ok": [], "negative": false}
 {"q": "prepaid plan with 2000 mins any network and 5gb for 30 days", "doc_id": "DOC-001", "ref_id": "dialog_triple_blaster_877", "gold_snippet": null, "also_ok": [], "negative": false}
 {"q": "i need 100gb anytime data reload on prepaid mobile sim for 30 days how much", "doc_id": "DOC-001", "ref_id": "dialog_anytime_ultra_2795", "gold_snippet": null, "also_ok": [], "negative": false}
 {"q": "traveling abroad tomorrow how much per day to get 2gb roaming data", "doc_id": "DOC-007", "ref_id": "DOC-007", "gold_snippet": "Daily Roaming Passport: USD 5.00 per day", "also_ok": [], "negative": false}
