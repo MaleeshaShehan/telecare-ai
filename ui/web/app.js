@@ -2,7 +2,7 @@
    TeleCare AI — front end
    Plain JS, no framework. Talks only to the Orchestrator on the same
    origin. The browser never sees a JWT: login state lives in the
-   Orchestrator's session, keyed by our conversation id.
+   Orchestrator's server-issued HttpOnly session cookie.
    ═══════════════════════════════════════════════════════════════════ */
 "use strict";
 
@@ -18,13 +18,11 @@ const HUMAN_REQUEST = "I'd like to talk to a human agent, please.";
 
 // ───────────────────────────── state ─────────────────────────────
 const state = {
-  cid: sessionStorage.getItem("telecare_cid") || newId(),
   traceCount: 0,
   turn: 0,
   busy: false,
   auth: { stage: "out", msisdn: "", error: "" },
 };
-sessionStorage.setItem("telecare_cid", state.cid);
 
 // ───────────────────────────── dom ─────────────────────────────
 const $ = (id) => document.getElementById(id);
@@ -35,9 +33,6 @@ const el = {
 };
 
 // ───────────────────────────── helpers ─────────────────────────────
-function newId() {
-  return (crypto.randomUUID && crypto.randomUUID()) || `c-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
 function h(tag, attrs = {}, ...children) {
   const node = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs || {})) {
@@ -74,10 +69,10 @@ function maskMsisdn(m) {
   return m.length > 6 ? m.slice(0, 3) + "•••" + m.slice(-4) : m;
 }
 async function api(path, { method = "GET", body } = {}) {
-  const headers = { "X-Conversation-Id": state.cid };
+  const headers = {};
   if (body) headers["Content-Type"] = "application/json";
   try {
-    const r = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+    const r = await fetch(path, { method, headers, credentials: "same-origin", body: body ? JSON.stringify(body) : undefined });
     let data = {};
     try { data = await r.json(); } catch { data = { detail: await r.text() }; }
     return { code: r.status, data };
@@ -176,17 +171,12 @@ async function onLogin(e) {
   e.preventDefault();
   const msisdn = $("msisdn").value.trim();
   const btn = e.target.querySelector("button[type=submit]"); btn.disabled = true;
-  const { code, data } = await api("/auth/login", { method: "POST", body: { conversation_id: state.cid, msisdn } });
+  const { code, data } = await api("/auth/login", { method: "POST", body: { msisdn } });
   btn.disabled = false;
   if (code === 200) {
     state.auth = { stage: "otp", msisdn, error: "" };
     renderAccount();
-    if (data.debug_otp) {
-      toast({ kind: "sms", icon: "💬", title: "Simulated SMS · TeleCare", body: "Your one-time code is", code: data.debug_otp, ttl: 60000,
-              actions: [{ label: "Use code", primary: true, onClick: () => { const o = $("otp"); if (o) { o.value = data.debug_otp; o.focus(); } } }] });
-    } else if (data.channel === "sms") {
-      toast({ kind: "sms", icon: "📱", title: "SMS sent", body: `A 6-digit code was sent to ${maskMsisdn(msisdn)}. Check your phone.`, ttl: 12000 });
-    }
+    toast({ kind: "sms", icon: "📱", title: "Verification requested", body: `If ${maskMsisdn(msisdn)} is registered, a 6-digit code will arrive shortly.`, ttl: 12000 });
   } else {
     state.auth.error = data.detail || "We couldn't send a code to that number.";
     renderAccount();
@@ -196,7 +186,7 @@ async function onVerify(e) {
   e.preventDefault();
   const otp = $("otp").value.trim();
   const btn = e.target.querySelector("button[type=submit]"); btn.disabled = true;
-  const { code, data } = await api("/auth/verify-otp", { method: "POST", body: { conversation_id: state.cid, msisdn: state.auth.msisdn, otp } });
+  const { code, data } = await api("/auth/verify-otp", { method: "POST", body: { msisdn: state.auth.msisdn, otp } });
   btn.disabled = false;
   if (code === 200 && data.logged_in) {
     state.auth = { stage: "in", msisdn: state.auth.msisdn, error: "" };
@@ -208,12 +198,12 @@ async function onVerify(e) {
   }
 }
 async function onLogout() {
-  await api("/auth/logout", { method: "POST", body: { conversation_id: state.cid } });
+  await api("/auth/logout", { method: "POST", body: {} });
   state.auth = { stage: "out", msisdn: "", error: "" };
   renderAccount();
 }
 async function syncAuth() {
-  const { code, data } = await api(`/auth/status?conversation_id=${encodeURIComponent(state.cid)}`);
+  const { code, data } = await api("/auth/status");
   if (code === 200 && data.logged_in && state.auth.stage !== "in") { state.auth = { stage: "in", msisdn: state.auth.msisdn || "your number", error: "" }; }
   if (code === 200 && !data.logged_in && state.auth.stage === "in") { state.auth = { stage: "out", msisdn: "", error: "" }; }
   renderAccount();
@@ -337,7 +327,7 @@ async function send(text) {
   addUser(text);
   const stopTyping = addTyping();
 
-  const { code, data } = await api("/chat", { method: "POST", body: { conversation_id: state.cid, message: text } });
+  const { code, data } = await api("/chat", { method: "POST", body: { message: text } });
   stopTyping();
 
   if (code === 200 || code === 429) {
@@ -394,8 +384,8 @@ function describe(decision = "", agent = "orchestrator") {
 // ───────────────────────────── composer & misc ─────────────────────────────
 function autosize() { el.input.style.height = "auto"; el.input.style.height = Math.min(el.input.scrollHeight, 160) + "px"; }
 
-function newChat() {
-  state.cid = newId(); sessionStorage.setItem("telecare_cid", state.cid);
+async function newChat() {
+  await api("/auth/logout", { method: "POST", body: {} });
   state.traceCount = 0; state.turn = 0;
   state.auth = { stage: "out", msisdn: "", error: "" };
   el.messages.querySelectorAll(".msg").forEach((m) => m.remove());

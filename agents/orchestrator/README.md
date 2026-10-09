@@ -17,13 +17,13 @@ to see exactly what it sends you.
 | POST | /auth/login | UI | Proxied to Account Agent `/auth/login`. Passes its status and body through. |
 | POST | /auth/verify-otp | UI | Proxied. On 200 with `token`, stores it in the session and returns `{logged_in: true}`. The browser never receives the token. |
 | POST | /auth/logout | UI | Clears the session token |
-| GET | /auth/status | UI | `{logged_in}` for a conversation |
+| GET | /auth/status | UI | `{logged_in}` for the server-issued cookie session |
 | GET | /agents/health | UI | Polls the three specialists' `/health` so the browser never contacts them directly |
 | GET | /tickets | UI (console) | Proxied to Supervisor `GET /tickets` |
 | GET | /health | run_all.py | |
 | GET | / | browser | the single-page UI |
 
-Rate limits on `/chat`: 20/min per `X-Conversation-Id`, 60/min per IP. The 21st
+Rate limits on `/chat`: 20/min per server-issued session cookie, 60/min per IP. The 21st
 request gets 429 with a polite message.
 
 ---

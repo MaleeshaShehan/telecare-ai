@@ -22,10 +22,13 @@ class Settings(BaseSettings):
     groq_api_key: str = ""              # optional third provider, used only if a key is set
     groq_model: str = "llama-3.1-8b-instant"
 
-    # Security
-    jwt_secret: str = "dev-only-change-me"
+    # Runtime environment and security. Account Agent startup rejects weak JWT
+    # secrets; there is intentionally no usable authentication fallback.
+    app_env: str = "development"       # development | test | production
+    jwt_secret: str = ""
+    otp_lookup_secret: str = ""        # optional; derived from JWT secret when empty
     fernet_key: str = ""
-    internal_api_key: str = "dev-only-change-me"
+    internal_api_key: str = ""
     jwt_ttl_minutes: int = 15
     otp_ttl_seconds: int = 300
 

@@ -33,6 +33,8 @@ Read it before starting any new component.
   OTPs are hashed, expire after five minutes, allow three attempts, and are single-use.
 - The subscriber ID always comes from the verified JWT, never from message text.
 - An authenticated account request that explicitly names a different or malformed mobile number is denied before account data is read.
+- Browser authentication state is selected only by a server-issued HttpOnly SameSite cookie, rotated after OTP verification; request-body conversation IDs are ignored.
+- OTP API responses never contain the OTP, local OTP rows store only an HMAC MSISDN key, and weak/default JWT secrets fail closed.
 - All SQL is parameterised (`?`). No string-built SQL anywhere.
 - Bill numbers are computed in Python (`bill_diff.py`); the LLM only phrases them.
 - Every outgoing LLM prompt goes through `shared/llm.py`, which masks PII.

@@ -7,10 +7,11 @@ __pycache__/
 .venv/
 .pytest_cache/
 .pytest-tmp-*/
+.tmp-*/
 .tmp-chrome-evidence*/
 
-# Local privacy/vulnerability assessment files
-/tests/privacy/
+# Local test and privacy/vulnerability assessment files
+/tests/
 /docs/individual_privacy_assessment/
 
 # Generated data (rebuild with seed.py / ingest.py)

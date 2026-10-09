@@ -247,7 +247,7 @@ evidence and have honest, documented weak spots. Current state:
 | Specialisation | Evidence the system produces | Known weak spots (legitimate findings) |
 | --- | --- | --- |
 | 1 · Prompt injection / jailbreak | `injection_blocked` in trace; masked prompts in mock mode | Filter is a short phrase list, easily paraphrased; NLU system prompt is a plain string (leakage possible); no output-side check on Knowledge answers |
-| 2 · Privacy / data leakage | JWT server-side; PII mask test; Fernet fields; audit without text | Session keyed by browser-generated conversation_id (knowing it = using its login); `/auth/status` lets you probe IDs; in-memory sessions; 15-min JWT not refreshed |
+| 2 · Privacy / data leakage | JWT server-side; HttpOnly SameSite session cookie; post-login session rotation; HMAC audit IDs; PII mask test; Fernet fields | In-memory sessions remain demo-only; production should use Redis and TLS-secured cookies |
 | 3 · Responsible AI / bias | Disclosure, citations, `not_found`, escalation | Keyword fallback intents are English-centric; plan advice is retrieval-based not cost-based (we say so); VADER on Sri Lankan English untested |
 | 4 · IR and API security | Internal key 401 test; hybrid eval; sufficiency threshold | Threshold tuning on the same test set; corpus poisoning via a bad document; rate limit resets per conversation_id; no TLS between agents (localhost) |
 

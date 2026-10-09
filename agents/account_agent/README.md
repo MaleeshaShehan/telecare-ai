@@ -80,11 +80,10 @@ Request: `{"msisdn": "0712345678"}`
 
 | HTTP | Body | Meaning |
 | --- | --- | --- |
-| 200 | `{"otp_sent": true, "channel": "simulated", "debug_otp": "482913", "expires_in": 300}` | Simulated SMS. The UI shows the code in a phone-style toast. |
-| 200 | `{"otp_sent": true, "channel": "sms", "expires_in": 300}` | Real SMS sent. No code in the response. The UI says "check your phone". |
+| 200 | `{"otp_sent": true, "channel": "sms", "expires_in": 300}` | Generic response for both known and unknown numbers. No OTP is returned. |
 | 200 | same generic success shape | Unknown numbers are not revealed and no SMS is sent. |
 | 400 | `{"detail": "Enter a valid Sri Lankan mobile number"}` | Invalid number format. |
-| 503 | `{"detail": "Could not send the verification code…"}` | The real SMS gateway did not accept the message. |
+| 200 | same generic response | Delivery failures are logged and the OTP is invalidated without exposing account existence. |
 | 429 | `{"detail": "Too many attempts, try again in a minute"}` | Rate limit: 5 per minute per msisdn or IP. |
 
 ### 2c. `POST /auth/verify-otp` — step 2 of login
@@ -109,7 +108,7 @@ issue, `/handle` must verify it and map it to one subscriber_id.
 - `bill_diff` renders a card: the change in large monospace (amber if up, green if down), each driver with its date and amount, and a green "Base plan unchanged" line when `base_plan_changed` is false.
 - `quota` renders a card with "X GB left" and a progress bar from `used_gb / allowance_gb`.
 - `needs_auth` makes the UI show a login gate and pulse the account panel.
-- On login, `debug_otp` (if present) appears in the simulated-SMS toast with a "Use code" button.
+- The browser never receives or displays an OTP from an API response.
 
 ---
 
@@ -172,7 +171,7 @@ The OTP itself is always yours: 6 digits from `secrets`, hash stored with a
 5-minute expiry and a 3-attempt counter. Only the *delivery* changes.
 `settings.sms_provider` (from `.env`, default `simulated`):
 
-- `simulated` → development only: return `channel: "simulated"` and `debug_otp` in the login response.
+- `simulated` → development/test only; never returns the OTP and is rejected when `APP_ENV=production`.
 - `textit` → send through the Textit.biz REST v1 API using `Authorization: Basic <API key>` and return no debug OTP.
 - `http` → send the code through a configurable JSON gateway and return no debug OTP.
 
@@ -184,8 +183,8 @@ field), optional `settings.sms_sender_id`. Put the call in one function in
 timeout (5 s). Message text: `"TeleCare: your one-time code is 482913. It expires in 5 minutes."`
 
 Real SMS mode fails closed when the gateway fails, times out, or has no URL.
-The API returns 503, invalidates the OTP, and logs `sms_failed`; it never tells
-the customer an SMS was sent when delivery failed.
+The API returns the same generic accepted response, invalidates the OTP, and
+logs `sms_failed`, preventing delivery outages from becoming enumeration oracles.
 
 Test numbers for real SMS can be team members' own numbers on synthetic
 subscriber rows. The gateway key stays in `.env`. The phone number is PII:
@@ -250,7 +249,7 @@ python run_all.py                                       # full system, log in fr
 | 12 | Read the DB file / table directly | Names, emails, NICs are ciphertext |
 | 13 | Prompt sent to the LLM (mock captures it) | Contains amounts, no phone/name/NIC |
 | 14 | `.env` and `*.db` in Git | Absent |
-| 15 | SMS gateway down or wrong URL (real SMS) | 503, OTP invalidated, `sms_failed` logged |
+| 15 | SMS gateway down or wrong URL (real SMS) | Generic response, OTP invalidated, `sms_failed` logged |
 
 ---
 

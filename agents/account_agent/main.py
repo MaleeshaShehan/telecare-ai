@@ -11,6 +11,7 @@ from the verified JWT; all SQL parameterised; bill maths in bill_diff.py.
 Authentication is real; bill and quota lookup remain the next implementation slice.
 """
 from collections import defaultdict, deque
+from contextlib import asynccontextmanager
 from threading import Lock
 from time import monotonic
 from decimal import Decimal
@@ -30,7 +31,14 @@ from shared.intents import Intent
 from agents.account_agent import auth, repository
 from agents.account_agent.bill_diff import diff as bill_difference
 
-app = FastAPI(title="TeleCare Account Agent")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    auth.validate_security_config()
+    yield
+
+
+app = FastAPI(title="TeleCare Account Agent", lifespan=lifespan)
 
 # Match valid Sri Lankan mobile numbers and near-valid shortened references.
 # A malformed number must still fail closed instead of being silently ignored.
@@ -84,27 +92,29 @@ def login(request: Request, body: LoginBody) -> dict:
     except (sqlite3.Error, httpx.HTTPError, RuntimeError):
         raise HTTPException(status_code=503, detail="Account service is not ready")
 
-    # Do not reveal whether a number exists in the subscriber database.
+    accepted = {"otp_sent": True, "channel": "sms", "expires_in": auth.settings.otp_ttl_seconds}
+
+    # Do not reveal whether a number exists in the subscriber database. The
+    # dummy bcrypt operation narrows the timing difference from a real lookup.
     if not subscriber or subscriber.get("account_status", "active") != "active":
+        auth.equalize_unknown_login_cost()
         log_decision("auth", "account_agent", "otp_not_sent", "subscriber not found")
-        return {"otp_sent": True, "channel": "sms", "expires_in": auth.settings.otp_ttl_seconds}
+        return accepted
 
     try:
         code = auth.create_otp(msisdn, subscriber["subscriber_id"])
     except (sqlite3.Error, httpx.HTTPError, RuntimeError):
         raise HTTPException(status_code=503, detail="Account service is not ready")
     try:
-        channel, debug_code = auth.deliver_otp(msisdn, code)
+        channel, _debug_code = auth.deliver_otp(msisdn, code)
     except auth.SmsDeliveryError:
         auth.invalidate_otp(msisdn)
         log_decision("auth", "account_agent", "sms_failed", "gateway unavailable")
-        raise HTTPException(status_code=503, detail="Could not send the verification code. Try again shortly.")
+        # A delivery outage must not become an account-enumeration oracle.
+        return accepted
 
     log_decision("auth", "account_agent", "otp_sent", f"channel={channel}")
-    result = {"otp_sent": True, "channel": channel, "expires_in": auth.settings.otp_ttl_seconds}
-    if debug_code is not None:
-        result["debug_otp"] = debug_code
-    return result
+    return accepted
 
 
 @app.post("/auth/verify-otp", dependencies=[Depends(require_internal_key)])

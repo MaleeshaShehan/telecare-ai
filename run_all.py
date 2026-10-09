@@ -8,6 +8,7 @@ served by the Orchestrator itself, so there is no fifth process.
 """
 import os
 import secrets
+import socket
 import subprocess
 import sys
 import time
@@ -23,6 +24,17 @@ AGENTS = [
     ("account_agent", "agents.account_agent.main:app", settings.account_port),
     ("supervisor_agent", "agents.supervisor_agent.main:app", settings.supervisor_port),
 ]
+
+
+def occupied_agent_ports() -> list[int]:
+    """Return agent ports already bound before this launcher starts children."""
+    occupied: list[int] = []
+    for _name, _target, port in AGENTS:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.settimeout(0.25)
+            if sock.connect_ex(("127.0.0.1", port)) == 0:
+                occupied.append(port)
+    return occupied
 
 
 def wait_for_health(name: str, port: int, timeout: float = 30.0) -> bool:
@@ -44,6 +56,13 @@ def main() -> None:
     procs: list[subprocess.Popen] = []
     try:
         print("Starting agents...")
+        occupied = occupied_agent_ports()
+        if occupied:
+            ports = ", ".join(str(port) for port in occupied)
+            raise SystemExit(
+                f"Cannot start: ports already in use: {ports}. "
+                "Stop the earlier TeleCare process and run this command again."
+            )
         child_env = os.environ.copy()
         configured_internal_key = settings.internal_api_key.strip()
         if not configured_internal_key or configured_internal_key == "dev-only-change-me":
