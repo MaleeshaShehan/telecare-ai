@@ -20,5 +20,6 @@ bcrypt
 PyJWT
 cryptography
 slowapi
+supabase         # optional: used by agents that choose the Supabase store
 faker
 pytest

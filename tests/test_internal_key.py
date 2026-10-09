@@ -35,3 +35,10 @@ def test_correct_key_returns_envelope(app):
 def test_account_agent_without_token_says_needs_auth():
     r = TestClient(account_app).post("/handle", json=ENV, headers={"X-Internal-Key": settings.internal_api_key})
     assert r.json()["payload"]["status"] == "needs_auth"
+
+
+def test_empty_configured_key_fails_closed(monkeypatch):
+    """An empty INTERNAL_API_KEY must not let an empty header through."""
+    monkeypatch.setattr(settings, "internal_api_key", "")
+    r = TestClient(knowledge_app).post("/handle", json=ENV, headers={"X-Internal-Key": ""})
+    assert r.status_code == 401
