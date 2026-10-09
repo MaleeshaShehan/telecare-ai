@@ -20,6 +20,13 @@ def test_month_specific_bill_is_classified_and_normalized():
     assert nlu.extract_billing_period("May I see my bill?", date(2026, 10, 9)) is None
 
 
+def test_active_package_request_is_account_specific():
+    assert nlu.classify_keywords("What is my active package?")["intent"] == Intent.ACTIVE_PACKAGE_DETAILS
+    assert nlu.classify_keywords("What plan am I on?")["intent"] == Intent.ACTIVE_PACKAGE_DETAILS
+    assert nlu.classify_keywords("What packages are available?")["intent"] == Intent.PACKAGE_INFO
+    assert nlu.classify_keywords("Which plan suits me?")["intent"] == Intent.PLAN_ADVICE
+
+
 def test_valid_llm_json_is_used(monkeypatch):
     monkeypatch.setattr(llm, "generate", lambda *a, **k: {
         "intent": "plan_advice", "confidence": 0.93,

@@ -24,14 +24,20 @@ def ask(intent: Intent, query: str, token: str | None) -> Envelope:
     return Envelope.model_validate(r.json())
 
 
-@pytest.mark.parametrize("intent", [Intent.BILL_ENQUIRY, Intent.BILL_BY_MONTH, Intent.QUOTA_CHECK])
+@pytest.mark.parametrize(
+    "intent",
+    [Intent.BILL_ENQUIRY, Intent.BILL_BY_MONTH, Intent.QUOTA_CHECK, Intent.ACTIVE_PACKAGE_DETAILS],
+)
 def test_no_token_is_needs_auth(intent):
     rep = ask(intent, "show me the bill for 0771234567", None)
     assert rep.payload["status"] == "needs_auth"
     assert "answer" not in rep.payload and "bill_diff" not in rep.payload
 
 
-@pytest.mark.parametrize("intent", [Intent.BILL_ENQUIRY, Intent.BILL_BY_MONTH, Intent.QUOTA_CHECK])
+@pytest.mark.parametrize(
+    "intent",
+    [Intent.BILL_ENQUIRY, Intent.BILL_BY_MONTH, Intent.QUOTA_CHECK, Intent.ACTIVE_PACKAGE_DETAILS],
+)
 def test_garbage_token_never_returns_data(intent):
     rep = ask(intent, "why is my bill higher", "not-a-real-token")
     # The stub returns ok; the real agent must return needs_auth. Either way: valid, and no card data on garbage.
@@ -85,6 +91,34 @@ def test_bill_by_month_payload(monkeypatch):
     assert payload["status"] == "ok"
     assert payload["bill"]["period"] == "2026-09"
     assert payload["bill"]["amount_due"] == 1500.0
+
+
+def test_active_package_payload(monkeypatch):
+    monkeypatch.setattr(auth, "verify_token", lambda token: "SUB-0001")
+    monkeypatch.setattr(repository, "subscriber_exists", lambda subscriber_id: True)
+    monkeypatch.setattr(repository, "get_plan", lambda subscriber_id: {
+        "plan_id": "PLAN-PLUS",
+        "plan_name": "Plus",
+        "monthly_fee": "2999.00",
+        "data_quota_mb": 51200,
+        "voice_quota_minutes": 1500,
+        "sms_quota": 1500,
+        "is_active": True,
+    })
+    env = Envelope(
+        conversation_id="contract-package",
+        sender_agent="orchestrator",
+        receiver_agent="account_agent",
+        intent=Intent.ACTIVE_PACKAGE_DETAILS,
+        payload={"query": "What is my active package?", "entities": {}},
+        auth_token="valid-test-token",
+    )
+    response = client.post("/handle", json=env.model_dump(mode="json"), headers=KEY)
+    assert response.status_code == 200
+    payload = response.json()["payload"]
+    assert payload["status"] == "ok"
+    assert payload["active_package"]["plan_id"] == "PLAN-PLUS"
+    assert payload["active_package"]["data_allowance_gb"] == 50.0
 
 
 def test_login_endpoint_shape():

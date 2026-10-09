@@ -37,6 +37,17 @@ NAMED_MONTH_RE = re.compile(
     re.IGNORECASE,
 )
 BILL_WORDS = ("bill", "invoice", "charged", "charges")
+ACTIVE_PACKAGE_PHRASES = (
+    "my active package",
+    "my current package",
+    "my package details",
+    "what package am i on",
+    "which package am i on",
+    "my active plan",
+    "my current plan",
+    "what plan am i on",
+    "which plan am i on",
+)
 
 # ---------------------------------------------------------------- LLM path
 
@@ -153,6 +164,11 @@ def _is_month_bill_request(message: str, entities: dict) -> bool:
     lowered = message.lower()
     return bool(entities.get("billing_period")) and any(word in lowered for word in BILL_WORDS)
 
+
+def _is_active_package_request(message: str) -> bool:
+    lowered = message.lower()
+    return any(phrase in lowered for phrase in ACTIVE_PACKAGE_PHRASES)
+
 # ---------------------------------------------------- keyword fallback
 
 # Order matters: more specific intents first.
@@ -175,6 +191,9 @@ def classify_keywords(message: str) -> dict:
     if _is_month_bill_request(message, entities):
         return {"intent": Intent.BILL_BY_MONTH, "confidence": 0.8, "entities": entities,
                 "needs_clarification": False, "method": "keywords"}
+    if _is_active_package_request(message):
+        return {"intent": Intent.ACTIVE_PACKAGE_DETAILS, "confidence": 0.8, "entities": entities,
+                "needs_clarification": False, "method": "keywords"}
     for intent, words in KEYWORDS:
         if any(w in lowered for w in words):
             return {"intent": intent, "confidence": 0.6, "entities": entities,
@@ -194,6 +213,11 @@ def classify(message: str) -> dict:
     for key, value in result.entities.items():
         if value is not None:
             entities[key] = value
-    intent = Intent.BILL_BY_MONTH if _is_month_bill_request(message, entities) else result.intent
+    if _is_month_bill_request(message, entities):
+        intent = Intent.BILL_BY_MONTH
+    elif _is_active_package_request(message):
+        intent = Intent.ACTIVE_PACKAGE_DETAILS
+    else:
+        intent = result.intent
     return {"intent": intent, "confidence": result.confidence, "entities": entities,
             "needs_clarification": result.needs_clarification, "method": "llm"}

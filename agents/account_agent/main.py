@@ -139,6 +139,8 @@ def handle(env: Envelope) -> Envelope:
             return _handle_bill_by_month(env, subscriber_id)
         if env.intent == Intent.QUOTA_CHECK:
             return _handle_quota(env, subscriber_id)
+        if env.intent == Intent.ACTIVE_PACKAGE_DETAILS:
+            return _handle_active_package(env, subscriber_id)
     except (sqlite3.Error, repository.RepositoryError):
         log_decision(env.conversation_id, "account_agent", "db_error", "account store unavailable")
         return make_reply(env, "error", {"reason": "Account information is temporarily unavailable"})
@@ -258,3 +260,41 @@ def _handle_quota(env: Envelope, subscriber_id: str) -> Envelope:
     quota = {"used_gb": used, "allowance_gb": allowance, "period": period}
     log_decision(env.conversation_id, "account_agent", "quota_returned", "subscriber usage calculated")
     return make_reply(env, "ok", {"answer": answer, "quota": quota})
+
+
+def _handle_active_package(env: Envelope, subscriber_id: str) -> Envelope:
+    plan = repository.get_plan(subscriber_id)
+    if not plan:
+        return make_reply(env, "not_found", {"reason": "No active package was found"})
+
+    plan_id = str(plan["plan_id"])
+    name = str(plan.get("plan_name", plan.get("name", plan_id)))
+    monthly_fee = Decimal(str(plan.get("monthly_fee", 0)))
+    if "data_quota_mb" in plan:
+        data_gb = Decimal(str(plan["data_quota_mb"])) / Decimal("1024")
+        voice_minutes = int(plan.get("voice_quota_minutes", 0))
+        sms_quota = int(plan.get("sms_quota", 0))
+        active = bool(plan.get("is_active", True))
+    else:
+        data_gb = Decimal(str(plan.get("data_gb", 0)))
+        voice_minutes = int(plan.get("voice_min", 0))
+        sms_quota = int(plan.get("sms_quota", 0))
+        active = True
+
+    package = {
+        "plan_id": plan_id,
+        "name": name,
+        "monthly_fee": float(monthly_fee),
+        "currency": "LKR",
+        "data_allowance_gb": round(float(data_gb), 2),
+        "voice_minutes": voice_minutes,
+        "sms_allowance": sms_quota,
+        "active": active,
+    }
+    answer = (
+        f"Your active package is {name} at LKR {_money(monthly_fee)} per month. "
+        f"It includes {package['data_allowance_gb']:.2f} GB of data, "
+        f"{voice_minutes:,} voice minutes, and {sms_quota:,} SMS."
+    )
+    log_decision(env.conversation_id, "account_agent", "active_package_returned", f"plan={plan_id}")
+    return make_reply(env, "ok", {"answer": answer, "active_package": package})

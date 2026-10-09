@@ -93,6 +93,21 @@ def test_month_bill_requires_auth_and_routes_with_period(monkeypatch, fresh_sess
     assert env.payload["entities"]["billing_period"] == "2026-09"
 
 
+def test_active_package_requires_auth_and_routes_to_account(monkeypatch, fresh_session):
+    fake = FakeAgents()
+    monkeypatch.setattr(router, "call_agent", fake)
+    response = chat(fresh_session, "What is my active package?")
+    assert response.json()["status"] == "needs_auth"
+    assert fake.to("account_agent") == []
+
+    session.set_token(fresh_session, "jwt-abc")
+    response = chat(fresh_session, "What is my active package?")
+    assert response.json()["status"] == "ok"
+    [env] = fake.to("account_agent")
+    assert env.intent == Intent.ACTIVE_PACKAGE_DETAILS
+    assert env.auth_token == "jwt-abc"
+
+
 def test_token_is_not_sent_to_knowledge_agent(monkeypatch, fresh_session):
     fake = FakeAgents()
     monkeypatch.setattr(router, "call_agent", fake)
