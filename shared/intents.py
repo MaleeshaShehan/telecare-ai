@@ -16,6 +16,7 @@ class Intent(str, Enum):
     PLAN_ADVICE = "plan_advice"
     # Account Agent (one logged-in subscriber)
     BILL_ENQUIRY = "bill_enquiry"
+    BILL_BY_MONTH = "bill_by_month"
     QUOTA_CHECK = "quota_check"
     # Supervisor Agent
     COMPLAINT = "complaint"
@@ -32,13 +33,16 @@ INTENT_OWNER: dict[Intent, str] = {
     Intent.TROUBLESHOOTING: "knowledge_agent",
     Intent.PLAN_ADVICE: "knowledge_agent",
     Intent.BILL_ENQUIRY: "account_agent",
+    Intent.BILL_BY_MONTH: "account_agent",
     Intent.QUOTA_CHECK: "account_agent",
     Intent.COMPLAINT: "supervisor_agent",
     Intent.OUT_OF_SCOPE: "orchestrator",
 }
 
 # Intents that need a valid JWT before the orchestrator will route them.
-AUTH_REQUIRED: frozenset[Intent] = frozenset({Intent.BILL_ENQUIRY, Intent.QUOTA_CHECK})
+AUTH_REQUIRED: frozenset[Intent] = frozenset(
+    {Intent.BILL_ENQUIRY, Intent.BILL_BY_MONTH, Intent.QUOTA_CHECK}
+)
 
 # Optional corpus category filter the Knowledge Agent applies per intent.
 INTENT_CATEGORY: dict[Intent, str] = {

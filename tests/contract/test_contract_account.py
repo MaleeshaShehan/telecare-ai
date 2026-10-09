@@ -7,6 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from agents.account_agent.main import app
+from agents.account_agent import auth, repository
 from shared.config import settings
 from shared.envelope import Envelope
 from shared.intents import Intent
@@ -23,14 +24,14 @@ def ask(intent: Intent, query: str, token: str | None) -> Envelope:
     return Envelope.model_validate(r.json())
 
 
-@pytest.mark.parametrize("intent", [Intent.BILL_ENQUIRY, Intent.QUOTA_CHECK])
+@pytest.mark.parametrize("intent", [Intent.BILL_ENQUIRY, Intent.BILL_BY_MONTH, Intent.QUOTA_CHECK])
 def test_no_token_is_needs_auth(intent):
     rep = ask(intent, "show me the bill for 0771234567", None)
     assert rep.payload["status"] == "needs_auth"
     assert "answer" not in rep.payload and "bill_diff" not in rep.payload
 
 
-@pytest.mark.parametrize("intent", [Intent.BILL_ENQUIRY, Intent.QUOTA_CHECK])
+@pytest.mark.parametrize("intent", [Intent.BILL_ENQUIRY, Intent.BILL_BY_MONTH, Intent.QUOTA_CHECK])
 def test_garbage_token_never_returns_data(intent):
     rep = ask(intent, "why is my bill higher", "not-a-real-token")
     # The stub returns ok; the real agent must return needs_auth. Either way: valid, and no card data on garbage.
@@ -51,6 +52,39 @@ def test_ok_payload_shapes():
             assert {"item", "date", "amount"} <= set(drv)
     if "quota" in rep.payload:
         assert {"used_gb", "allowance_gb"} <= set(rep.payload["quota"])
+
+
+def test_bill_by_month_payload(monkeypatch):
+    monkeypatch.setattr(auth, "verify_token", lambda token: "SUB-0001")
+    monkeypatch.setattr(repository, "subscriber_exists", lambda subscriber_id: True)
+    monkeypatch.setattr(repository, "get_bill_for_period", lambda subscriber_id, period: {
+        "bill_id": "BILL-SUB-0001-2026-09",
+        "total_amount": "2500.00",
+        "amount_paid": "1000.00",
+        "amount_due": "1500.00",
+        "currency": "LKR",
+        "status": "partially_paid",
+        "due_date": "2026-10-15",
+    })
+    monkeypatch.setattr(repository, "get_bill_items", lambda subscriber_id, bill_id: [{
+        "description": "Basic monthly package",
+        "amount": "2500.00",
+        "occurred_at": "2026-09-01T00:00:00+00:00",
+    }])
+    env = Envelope(
+        conversation_id="contract-month",
+        sender_agent="orchestrator",
+        receiver_agent="account_agent",
+        intent=Intent.BILL_BY_MONTH,
+        payload={"query": "September bill", "entities": {"billing_period": "2026-09"}},
+        auth_token="valid-test-token",
+    )
+    response = client.post("/handle", json=env.model_dump(mode="json"), headers=KEY)
+    assert response.status_code == 200
+    payload = response.json()["payload"]
+    assert payload["status"] == "ok"
+    assert payload["bill"]["period"] == "2026-09"
+    assert payload["bill"]["amount_due"] == 1500.0
 
 
 def test_login_endpoint_shape():

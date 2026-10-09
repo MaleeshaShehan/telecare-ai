@@ -2,6 +2,7 @@
 from agents.orchestrator import nlu
 from shared import llm
 from shared.intents import Intent
+from datetime import date
 
 
 def test_mock_provider_falls_back_to_keywords():
@@ -9,6 +10,14 @@ def test_mock_provider_falls_back_to_keywords():
     out = nlu.classify("roaming rates for India")
     assert out["method"] == "keywords"
     assert out["intent"] == Intent.ROAMING_ADVICE
+
+
+def test_month_specific_bill_is_classified_and_normalized():
+    out = nlu.classify_keywords("Show me my bill for September 2026")
+    assert out["intent"] == Intent.BILL_BY_MONTH
+    assert out["entities"]["billing_period"] == "2026-09"
+    assert nlu.extract_billing_period("invoice for 2026/08") == "2026-08"
+    assert nlu.extract_billing_period("May I see my bill?", date(2026, 10, 9)) is None
 
 
 def test_valid_llm_json_is_used(monkeypatch):

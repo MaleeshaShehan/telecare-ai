@@ -14,6 +14,8 @@ from collections import defaultdict, deque
 from threading import Lock
 from time import monotonic
 from decimal import Decimal
+from datetime import datetime
+import re
 
 import sqlite3
 import httpx
@@ -133,6 +135,8 @@ def handle(env: Envelope) -> Envelope:
 
         if env.intent == Intent.BILL_ENQUIRY:
             return _handle_bill(env, subscriber_id)
+        if env.intent == Intent.BILL_BY_MONTH:
+            return _handle_bill_by_month(env, subscriber_id)
         if env.intent == Intent.QUOTA_CHECK:
             return _handle_quota(env, subscriber_id)
     except (sqlite3.Error, repository.RepositoryError):
@@ -179,6 +183,54 @@ def _handle_bill(env: Envelope, subscriber_id: str) -> Envelope:
     answer = f"Your latest bill {direction} compared with the previous bill.{explanation}{plan_note}"
     log_decision(env.conversation_id, "account_agent", "bill_compared", "two subscriber bills compared")
     return make_reply(env, "ok", {"answer": answer, "bill_diff": comparison})
+
+
+def _handle_bill_by_month(env: Envelope, subscriber_id: str) -> Envelope:
+    entities = env.payload.get("entities") or {}
+    period = entities.get("billing_period")
+    if not isinstance(period, str) or not re.fullmatch(r"20\d{2}-(0[1-9]|1[0-2])", period):
+        return make_reply(
+            env,
+            "not_found",
+            {"reason": "Please specify the billing month, for example September 2026"},
+        )
+
+    bill = repository.get_bill_for_period(subscriber_id, period)
+    if not bill:
+        return make_reply(env, "not_found", {"reason": f"No bill was found for {period}"})
+
+    items = repository.get_bill_items(subscriber_id, bill["bill_id"])
+    total = Decimal(str(bill.get("total_amount", bill.get("total", 0))))
+    paid = Decimal(str(bill.get("amount_paid", 0)))
+    due = Decimal(str(bill.get("amount_due", max(total - paid, Decimal("0")))))
+    month_label = datetime.strptime(period, "%Y-%m").strftime("%B %Y")
+    status = str(bill.get("status", "issued"))
+    currency = str(bill.get("currency", "LKR"))
+
+    answer = (
+        f"Your {month_label} bill total is {currency} {_money(total)}. "
+        f"You have paid {currency} {_money(paid)}, and {currency} {_money(due)} remains due. "
+        f"The bill status is {status.replace('_', ' ')}."
+    )
+    bill_payload = {
+        "period": period,
+        "total": float(total),
+        "amount_paid": float(paid),
+        "amount_due": float(due),
+        "currency": currency,
+        "status": status,
+        "due_date": bill.get("due_date"),
+        "items": [
+            {
+                "description": item.get("description", "Charge"),
+                "amount": float(Decimal(str(item.get("amount", 0)))),
+                "date": str(item.get("occurred_at", item.get("item_date", "")))[:10],
+            }
+            for item in items
+        ],
+    }
+    log_decision(env.conversation_id, "account_agent", "monthly_bill_returned", f"period={period}")
+    return make_reply(env, "ok", {"answer": answer, "bill": bill_payload})
 
 
 def _handle_quota(env: Envelope, subscriber_id: str) -> Envelope:

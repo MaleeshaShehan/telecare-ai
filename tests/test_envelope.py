@@ -56,5 +56,5 @@ def test_round_trips_through_json():
 
 def test_every_intent_has_an_owner():
     assert set(INTENT_OWNER) == set(Intent)
-    assert AUTH_REQUIRED == {Intent.BILL_ENQUIRY, Intent.QUOTA_CHECK}
+    assert AUTH_REQUIRED == {Intent.BILL_ENQUIRY, Intent.BILL_BY_MONTH, Intent.QUOTA_CHECK}
     assert STATUS_VALUES == ("ok", "needs_auth", "not_found", "escalate", "error")

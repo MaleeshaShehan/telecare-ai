@@ -110,6 +110,27 @@ def get_bills(subscriber_id: str, limit: int = 2) -> list[dict[str, Any]]:
     return [dict(row) for row in rows]
 
 
+def get_bill_for_period(subscriber_id: str, period: str) -> dict[str, Any] | None:
+    """Return one subscriber-owned bill for a YYYY-MM billing period."""
+    period_start = f"{period}-01"
+    if using_supabase():
+        rows = _select(
+            "bills",
+            select="bill_id,subscriber_id,billing_period_start,billing_period_end,issued_at,due_date,subtotal,tax_amount,total_amount,amount_paid,amount_due,currency,status",
+            subscriber_id=f"eq.{subscriber_id}",
+            billing_period_start=f"eq.{period_start}",
+            status="in.(issued,partially_paid,paid,overdue)",
+            limit="1",
+        )
+        return rows[0] if rows else None
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT * FROM bills WHERE subscriber_id = ? AND period = ?",
+            (subscriber_id, period),
+        ).fetchone()
+    return dict(row) if row else None
+
+
 def get_bill_items(subscriber_id: str, bill_id: str | int) -> list[dict[str, Any]]:
     """Return items only after proving the bill belongs to this subscriber."""
     if using_supabase():
