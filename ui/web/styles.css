@@ -282,7 +282,7 @@ a:hover { text-decoration: underline; }
 .msg.user .bubble { background: var(--accent); color: var(--accent-ink); border-color: transparent; border-bottom-right-radius: 6px; }
 .msg.ai .bubble { border-bottom-left-radius: 6px; }
 .bubble.escalate { border-left: 3px solid var(--amber); }
-.bubble.not_found, .bubble.error { border-left: 3px solid var(--red); }
+.bubble.not_found, .bubble.error, .bubble.forbidden { border-left: 3px solid var(--red); }
 .bubble.needs_auth { border-left: 3px solid var(--ag-account_agent); }
 .bubble .cite {
   display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; margin: 0 1px;

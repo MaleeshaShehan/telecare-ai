@@ -92,6 +92,25 @@ def subscriber_exists(subscriber_id: str) -> bool:
     return row is not None
 
 
+def get_subscriber_msisdn(subscriber_id: str) -> str | None:
+    """Return the subscriber's own MSISDN for account-reference authorization."""
+    if using_supabase():
+        rows = _select(
+            "subscribers",
+            select="msisdn",
+            subscriber_id=f"eq.{subscriber_id}",
+            account_status="eq.active",
+            limit="1",
+        )
+        return str(rows[0]["msisdn"]) if rows and rows[0].get("msisdn") else None
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT msisdn FROM subscribers WHERE subscriber_id = ?",
+            (subscriber_id,),
+        ).fetchone()
+    return str(row["msisdn"]) if row and row["msisdn"] else None
+
+
 def get_bills(subscriber_id: str, limit: int = 2) -> list[dict[str, Any]]:
     if using_supabase():
         return _select(

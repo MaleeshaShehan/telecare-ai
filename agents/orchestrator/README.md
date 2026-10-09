@@ -17,13 +17,13 @@ to see exactly what it sends you.
 | POST | /auth/login | UI | Proxied to Account Agent `/auth/login`. Passes its status and body through. |
 | POST | /auth/verify-otp | UI | Proxied. On 200 with `token`, stores it in the session and returns `{logged_in: true}`. The browser never receives the token. |
 | POST | /auth/logout | UI | Clears the session token |
-| GET | /auth/status | UI | `{logged_in}` for a conversation |
+| GET | /auth/status | UI | `{logged_in}` for the server-issued cookie session |
 | GET | /agents/health | UI | Polls the three specialists' `/health` so the browser never contacts them directly |
 | GET | /tickets | UI (console) | Proxied to Supervisor `GET /tickets` |
 | GET | /health | run_all.py | |
 | GET | / | browser | the single-page UI |
 
-Rate limits on `/chat`: 20/min per `X-Conversation-Id`, 60/min per IP. The 21st
+Rate limits on `/chat`: 20/min per server-issued session cookie, 60/min per IP. The 21st
 request gets 429 with a polite message.
 
 ---
@@ -42,7 +42,7 @@ Every step can end the turn. That is what makes this an agent and not a pipe.
 | 5b | Clarify | confidence < 0.5 or `needs_clarification` → one question | `clarify` |
 | 6 | Auth gate | intent in `AUTH_REQUIRED` and no token → `needs_auth` | `auth_required` |
 | 7 | Route | `out_of_scope` → polite refusal, else envelope to `INTENT_OWNER[intent]` | `answered_locally` / `route-><agent>` |
-| 8 | Handle result | `ok` / `needs_auth` / `not_found` / `escalate` / `error` | `result=<status>` |
+| 8 | Handle result | `ok` / `needs_auth` / `forbidden` / `not_found` / `escalate` / `error` | `result=<status>` |
 | 9 | Compose (`composer.py`) | AI disclosure on first turn, sources, cards, trace | `ai_disclosure_shown` |
 
 ### NLU (`nlu.py`)

@@ -26,6 +26,7 @@ from shared.config import settings
 AUTH_DB = Path(__file__).resolve().parents[2] / "data" / "db" / "auth.db"
 MAX_OTP_ATTEMPTS = 3
 MSISDN_RE = re.compile(r"^07\d{8}$")
+_WEAK_JWT_SECRETS = {"", "dev-only-change-me", "change-me", "secret"}
 
 
 class SmsDeliveryError(RuntimeError):
@@ -42,13 +43,11 @@ def normalize_msisdn(value: str) -> str | None:
     return compact if MSISDN_RE.fullmatch(compact) else None
 
 
-def _connect_auth() -> sqlite3.Connection:
-    AUTH_DB.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(AUTH_DB, timeout=5)
+def _create_local_otp_schema(conn: sqlite3.Connection) -> None:
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS otp_challenges (
-            msisdn TEXT PRIMARY KEY,
+            msisdn_hash TEXT PRIMARY KEY,
             subscriber_id TEXT NOT NULL,
             otp_hash BLOB NOT NULL,
             expires_at INTEGER NOT NULL,
@@ -56,6 +55,22 @@ def _connect_auth() -> sqlite3.Connection:
         )
         """
     )
+
+
+def _connect_auth() -> sqlite3.Connection:
+    AUTH_DB.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(AUTH_DB, timeout=5)
+    columns = {
+        str(row[1])
+        for row in conn.execute("PRAGMA table_info(otp_challenges)").fetchall()
+    }
+    if columns and "msisdn_hash" not in columns:
+        # OTP challenges are short-lived. Dropping legacy rows avoids retaining
+        # plaintext phone numbers and safely invalidates any outstanding code.
+        conn.execute("DROP TABLE otp_challenges")
+    _create_local_otp_schema(conn)
+    conn.execute("DELETE FROM otp_challenges WHERE expires_at < ?", (int(time.time()),))
+    conn.commit()
     return conn
 
 
@@ -63,13 +78,45 @@ def _using_supabase() -> bool:
     return settings.account_db_backend.strip().lower() == "supabase"
 
 
+def _jwt_secret_is_strong(secret: str | None = None) -> bool:
+    value = (settings.jwt_secret if secret is None else secret).strip()
+    return len(value.encode("utf-8")) >= 32 and value.lower() not in _WEAK_JWT_SECRETS
+
+
+def validate_security_config() -> None:
+    """Fail startup when authentication or SMS configuration is unsafe."""
+    if not _jwt_secret_is_strong():
+        raise RuntimeError("JWT_SECRET must be a non-default random value of at least 32 bytes")
+    environment = settings.app_env.strip().lower()
+    if environment in {"production", "prod"} and settings.sms_provider.strip().lower() == "simulated":
+        raise RuntimeError("SMS_PROVIDER=simulated is not allowed in production")
+
+
+def _otp_lookup_key() -> bytes:
+    configured = settings.otp_lookup_secret.strip()
+    if configured:
+        return configured.encode("utf-8")
+    if not _jwt_secret_is_strong():
+        raise RuntimeError("A strong JWT_SECRET is required for OTP lookup protection")
+    return hmac.new(
+        settings.jwt_secret.encode("utf-8"),
+        b"telecare-otp-msisdn-lookup-v1",
+        hashlib.sha256,
+    ).digest()
+
+
 def _msisdn_hash(msisdn: str) -> str:
     """Stable, non-reversible lookup key; the raw number is never stored in OTP rows."""
     return hmac.new(
-        settings.jwt_secret.encode("utf-8"),
+        _otp_lookup_key(),
         msisdn.encode("ascii"),
         hashlib.sha256,
     ).hexdigest()
+
+
+def equalize_unknown_login_cost() -> None:
+    """Approximate the password-hash work performed for a registered number."""
+    bcrypt.hashpw(secrets.token_bytes(16), bcrypt.gensalt())
 
 
 def _otp_request(
@@ -175,15 +222,15 @@ def create_otp(msisdn: str, subscriber_id: str) -> str:
     with _connect_auth() as conn:
         conn.execute(
             """
-            INSERT INTO otp_challenges (msisdn, subscriber_id, otp_hash, expires_at, attempts)
+            INSERT INTO otp_challenges (msisdn_hash, subscriber_id, otp_hash, expires_at, attempts)
             VALUES (?, ?, ?, ?, 0)
-            ON CONFLICT(msisdn) DO UPDATE SET
+            ON CONFLICT(msisdn_hash) DO UPDATE SET
                 subscriber_id = excluded.subscriber_id,
                 otp_hash = excluded.otp_hash,
                 expires_at = excluded.expires_at,
                 attempts = 0
             """,
-            (msisdn, subscriber_id, otp_hash, expires_at),
+            (_msisdn_hash(msisdn), subscriber_id, otp_hash, expires_at),
         )
     return code
 
@@ -193,7 +240,7 @@ def invalidate_otp(msisdn: str) -> None:
         _invalidate_supabase_otp(msisdn)
         return
     with _connect_auth() as conn:
-        conn.execute("DELETE FROM otp_challenges WHERE msisdn = ?", (msisdn,))
+        conn.execute("DELETE FROM otp_challenges WHERE msisdn_hash = ?", (_msisdn_hash(msisdn),))
 
 
 def verify_otp(msisdn: str, code: str) -> str | None:
@@ -203,15 +250,15 @@ def verify_otp(msisdn: str, code: str) -> str | None:
     with _connect_auth() as conn:
         conn.execute("BEGIN IMMEDIATE")
         row = conn.execute(
-            "SELECT subscriber_id, otp_hash, expires_at, attempts FROM otp_challenges WHERE msisdn = ?",
-            (msisdn,),
+            "SELECT subscriber_id, otp_hash, expires_at, attempts FROM otp_challenges WHERE msisdn_hash = ?",
+            (_msisdn_hash(msisdn),),
         ).fetchone()
         if not row:
             return None
 
         subscriber_id, otp_hash, expires_at, attempts = row
         if expires_at < int(time.time()) or attempts >= MAX_OTP_ATTEMPTS:
-            conn.execute("DELETE FROM otp_challenges WHERE msisdn = ?", (msisdn,))
+            conn.execute("DELETE FROM otp_challenges WHERE msisdn_hash = ?", (_msisdn_hash(msisdn),))
             return None
 
         valid = bool(re.fullmatch(r"\d{6}", code or "")) and bcrypt.checkpw(
@@ -220,19 +267,21 @@ def verify_otp(msisdn: str, code: str) -> str | None:
         if not valid:
             next_attempt = attempts + 1
             if next_attempt >= MAX_OTP_ATTEMPTS:
-                conn.execute("DELETE FROM otp_challenges WHERE msisdn = ?", (msisdn,))
+                conn.execute("DELETE FROM otp_challenges WHERE msisdn_hash = ?", (_msisdn_hash(msisdn),))
             else:
                 conn.execute(
-                    "UPDATE otp_challenges SET attempts = ? WHERE msisdn = ?",
-                    (next_attempt, msisdn),
+                    "UPDATE otp_challenges SET attempts = ? WHERE msisdn_hash = ?",
+                    (next_attempt, _msisdn_hash(msisdn)),
                 )
             return None
 
-        conn.execute("DELETE FROM otp_challenges WHERE msisdn = ?", (msisdn,))
+        conn.execute("DELETE FROM otp_challenges WHERE msisdn_hash = ?", (_msisdn_hash(msisdn),))
         return str(subscriber_id)
 
 
 def issue_token(subscriber_id: str) -> str:
+    if not _jwt_secret_is_strong():
+        raise RuntimeError("JWT signing is unavailable because JWT_SECRET is unsafe")
     now = datetime.now(timezone.utc)
     payload = {
         "sub": subscriber_id,
@@ -244,6 +293,8 @@ def issue_token(subscriber_id: str) -> str:
 
 
 def verify_token(token: str) -> str | None:
+    if not _jwt_secret_is_strong():
+        return None
     try:
         payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
         if payload.get("type") != "account_access":
@@ -312,10 +363,10 @@ def send_textit_sms(msisdn: str, message: str) -> bool:
 
 
 def deliver_otp(msisdn: str, code: str) -> tuple[str, str | None]:
-    """Return (channel, debug_code). Real mode never exposes the OTP."""
+    """Deliver an OTP without ever returning its plaintext to the API caller."""
     provider = settings.sms_provider.lower()
     if provider == "simulated":
-        return "simulated", code
+        return "simulated", None
     text = f"TeleCare: your one-time code is {code}. It expires in 5 minutes."
     if provider == "textit":
         if not send_textit_sms(msisdn, text):

@@ -11,6 +11,7 @@ from the verified JWT; all SQL parameterised; bill maths in bill_diff.py.
 Authentication is real; bill and quota lookup remain the next implementation slice.
 """
 from collections import defaultdict, deque
+from contextlib import asynccontextmanager
 from threading import Lock
 from time import monotonic
 from decimal import Decimal
@@ -30,7 +31,18 @@ from shared.intents import Intent
 from agents.account_agent import auth, repository
 from agents.account_agent.bill_diff import diff as bill_difference
 
-app = FastAPI(title="TeleCare Account Agent")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    auth.validate_security_config()
+    yield
+
+
+app = FastAPI(title="TeleCare Account Agent", lifespan=lifespan)
+
+# Match valid Sri Lankan mobile numbers and near-valid shortened references.
+# A malformed number must still fail closed instead of being silently ignored.
+_ACCOUNT_PHONE_RE = re.compile(r"(?<!\d)(?:\+?94|0)7(?:[\s()-]*\d){7,8}(?!\d)")
 
 
 class LoginBody(BaseModel):
@@ -80,27 +92,29 @@ def login(request: Request, body: LoginBody) -> dict:
     except (sqlite3.Error, httpx.HTTPError, RuntimeError):
         raise HTTPException(status_code=503, detail="Account service is not ready")
 
-    # Do not reveal whether a number exists in the subscriber database.
+    accepted = {"otp_sent": True, "channel": "sms", "expires_in": auth.settings.otp_ttl_seconds}
+
+    # Do not reveal whether a number exists in the subscriber database. The
+    # dummy bcrypt operation narrows the timing difference from a real lookup.
     if not subscriber or subscriber.get("account_status", "active") != "active":
+        auth.equalize_unknown_login_cost()
         log_decision("auth", "account_agent", "otp_not_sent", "subscriber not found")
-        return {"otp_sent": True, "channel": "sms", "expires_in": auth.settings.otp_ttl_seconds}
+        return accepted
 
     try:
         code = auth.create_otp(msisdn, subscriber["subscriber_id"])
     except (sqlite3.Error, httpx.HTTPError, RuntimeError):
         raise HTTPException(status_code=503, detail="Account service is not ready")
     try:
-        channel, debug_code = auth.deliver_otp(msisdn, code)
+        channel, _debug_code = auth.deliver_otp(msisdn, code)
     except auth.SmsDeliveryError:
         auth.invalidate_otp(msisdn)
         log_decision("auth", "account_agent", "sms_failed", "gateway unavailable")
-        raise HTTPException(status_code=503, detail="Could not send the verification code. Try again shortly.")
+        # A delivery outage must not become an account-enumeration oracle.
+        return accepted
 
     log_decision("auth", "account_agent", "otp_sent", f"channel={channel}")
-    result = {"otp_sent": True, "channel": channel, "expires_in": auth.settings.otp_ttl_seconds}
-    if debug_code is not None:
-        result["debug_otp"] = debug_code
-    return result
+    return accepted
 
 
 @app.post("/auth/verify-otp", dependencies=[Depends(require_internal_key)])
@@ -133,6 +147,15 @@ def handle(env: Envelope) -> Envelope:
             log_decision(env.conversation_id, "account_agent", "needs_auth", "unknown subscriber")
             return make_reply(env, "needs_auth")
 
+        if _references_another_subscriber(env, subscriber_id):
+            log_decision(
+                env.conversation_id,
+                "account_agent",
+                "account_reference_denied",
+                "explicit number does not match authenticated subscriber",
+            )
+            return make_reply(env, "forbidden")
+
         if env.intent == Intent.BILL_ENQUIRY:
             return _handle_bill(env, subscriber_id)
         if env.intent == Intent.BILL_BY_MONTH:
@@ -146,6 +169,23 @@ def handle(env: Envelope) -> Envelope:
         return make_reply(env, "error", {"reason": "Account information is temporarily unavailable"})
 
     return make_reply(env, "error", {"reason": "Unsupported account request"})
+
+
+def _references_another_subscriber(env: Envelope, subscriber_id: str) -> bool:
+    """Fail closed when an account request names a number other than the JWT owner."""
+    query = str(env.payload.get("query") or "")
+    references = _ACCOUNT_PHONE_RE.findall(query)
+    entity_phones = (env.payload.get("entities") or {}).get("phone") or []
+    if isinstance(entity_phones, str):
+        entity_phones = [entity_phones]
+    references.extend(str(value) for value in entity_phones)
+    if not references:
+        return False
+
+    own_msisdn = auth.normalize_msisdn(repository.get_subscriber_msisdn(subscriber_id) or "")
+    if not own_msisdn:
+        return True
+    return any(auth.normalize_msisdn(reference) != own_msisdn for reference in references)
 
 
 def _money(value: object) -> str:

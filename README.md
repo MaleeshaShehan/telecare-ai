@@ -29,6 +29,10 @@ python -m agents.knowledge_agent.ingest     # build Chroma + BM25 indexes
 python run_all.py                           # start 4 agents, opens http://127.0.0.1:8000/
 ```
 
+If `INTERNAL_API_KEY` is blank or still set to the development default,
+`run_all.py` generates one temporary key and shares it with all four agent
+processes. The value is neither printed nor written to disk.
+
 The UI is plain HTML, CSS and JavaScript with no build step. Edit the files in
 `ui/web` and refresh the browser.
 
