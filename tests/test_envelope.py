@@ -62,4 +62,4 @@ def test_every_intent_has_an_owner():
         Intent.QUOTA_CHECK,
         Intent.ACTIVE_PACKAGE_DETAILS,
     }
-    assert STATUS_VALUES == ("ok", "needs_auth", "not_found", "escalate", "error")
+    assert STATUS_VALUES == ("ok", "needs_auth", "forbidden", "not_found", "escalate", "error")

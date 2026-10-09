@@ -4,7 +4,7 @@ Every request and reply between agents is one Envelope sent as JSON over HTTP.
 Eight fields, never more. Replies reuse the same shape and put `status` plus
 the result inside `payload`.
 
-Reply status values: ok | needs_auth | not_found | escalate | error
+Reply status values: ok | needs_auth | forbidden | not_found | escalate | error
 """
 from datetime import datetime, timezone
 from typing import Literal, Optional
@@ -16,8 +16,15 @@ from shared.intents import Intent
 
 Agent = Literal["orchestrator", "knowledge_agent", "account_agent", "supervisor_agent"]
 
-Status = Literal["ok", "needs_auth", "not_found", "escalate", "error"]
-STATUS_VALUES: tuple[str, ...] = ("ok", "needs_auth", "not_found", "escalate", "error")
+Status = Literal["ok", "needs_auth", "forbidden", "not_found", "escalate", "error"]
+STATUS_VALUES: tuple[str, ...] = (
+    "ok",
+    "needs_auth",
+    "forbidden",
+    "not_found",
+    "escalate",
+    "error",
+)
 
 
 class Envelope(BaseModel):

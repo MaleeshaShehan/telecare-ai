@@ -78,6 +78,24 @@ def test_bill_enquiry_with_token_routes_to_account_agent(monkeypatch, fresh_sess
     assert env.intent == Intent.BILL_ENQUIRY
 
 
+def test_foreign_account_refusal_is_shown_without_bill_data(monkeypatch, fresh_session):
+    fake = FakeAgents()
+
+    def specialists(env: Envelope) -> Envelope:
+        if env.receiver_agent == "account_agent":
+            fake.sent.append(env)
+            return make_reply(env, "forbidden")
+        return fake(env)
+
+    monkeypatch.setattr(router, "call_agent", specialists)
+    session.set_token(fresh_session, "jwt-abc")
+    response = chat(fresh_session, "Can I get the bill value of 071345678?").json()
+
+    assert response["status"] == "forbidden"
+    assert response["reply"].endswith(composer.ACCOUNT_PRIVACY_REFUSAL)
+    assert response["extra"] == {}
+
+
 def test_month_bill_requires_auth_and_routes_with_period(monkeypatch, fresh_session):
     fake = FakeAgents()
     monkeypatch.setattr(router, "call_agent", fake)

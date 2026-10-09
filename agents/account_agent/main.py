@@ -32,6 +32,10 @@ from agents.account_agent.bill_diff import diff as bill_difference
 
 app = FastAPI(title="TeleCare Account Agent")
 
+# Match valid Sri Lankan mobile numbers and near-valid shortened references.
+# A malformed number must still fail closed instead of being silently ignored.
+_ACCOUNT_PHONE_RE = re.compile(r"(?<!\d)(?:\+?94|0)7(?:[\s()-]*\d){7,8}(?!\d)")
+
 
 class LoginBody(BaseModel):
     msisdn: str
@@ -133,6 +137,15 @@ def handle(env: Envelope) -> Envelope:
             log_decision(env.conversation_id, "account_agent", "needs_auth", "unknown subscriber")
             return make_reply(env, "needs_auth")
 
+        if _references_another_subscriber(env, subscriber_id):
+            log_decision(
+                env.conversation_id,
+                "account_agent",
+                "account_reference_denied",
+                "explicit number does not match authenticated subscriber",
+            )
+            return make_reply(env, "forbidden")
+
         if env.intent == Intent.BILL_ENQUIRY:
             return _handle_bill(env, subscriber_id)
         if env.intent == Intent.BILL_BY_MONTH:
@@ -146,6 +159,23 @@ def handle(env: Envelope) -> Envelope:
         return make_reply(env, "error", {"reason": "Account information is temporarily unavailable"})
 
     return make_reply(env, "error", {"reason": "Unsupported account request"})
+
+
+def _references_another_subscriber(env: Envelope, subscriber_id: str) -> bool:
+    """Fail closed when an account request names a number other than the JWT owner."""
+    query = str(env.payload.get("query") or "")
+    references = _ACCOUNT_PHONE_RE.findall(query)
+    entity_phones = (env.payload.get("entities") or {}).get("phone") or []
+    if isinstance(entity_phones, str):
+        entity_phones = [entity_phones]
+    references.extend(str(value) for value in entity_phones)
+    if not references:
+        return False
+
+    own_msisdn = auth.normalize_msisdn(repository.get_subscriber_msisdn(subscriber_id) or "")
+    if not own_msisdn:
+        return True
+    return any(auth.normalize_msisdn(reference) != own_msisdn for reference in references)
 
 
 def _money(value: object) -> str:

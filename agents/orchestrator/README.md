@@ -42,7 +42,7 @@ Every step can end the turn. That is what makes this an agent and not a pipe.
 | 5b | Clarify | confidence < 0.5 or `needs_clarification` → one question | `clarify` |
 | 6 | Auth gate | intent in `AUTH_REQUIRED` and no token → `needs_auth` | `auth_required` |
 | 7 | Route | `out_of_scope` → polite refusal, else envelope to `INTENT_OWNER[intent]` | `answered_locally` / `route-><agent>` |
-| 8 | Handle result | `ok` / `needs_auth` / `not_found` / `escalate` / `error` | `result=<status>` |
+| 8 | Handle result | `ok` / `needs_auth` / `forbidden` / `not_found` / `escalate` / `error` | `result=<status>` |
 | 9 | Compose (`composer.py`) | AI disclosure on first turn, sources, cards, trace | `ai_disclosure_shown` |
 
 ### NLU (`nlu.py`)

@@ -41,7 +41,7 @@ def test_no_token_is_needs_auth(intent):
 def test_garbage_token_never_returns_data(intent):
     rep = ask(intent, "why is my bill higher", "not-a-real-token")
     # The stub returns ok; the real agent must return needs_auth. Either way: valid, and no card data on garbage.
-    assert rep.payload["status"] in {"ok", "needs_auth", "not_found", "error"}
+    assert rep.payload["status"] in {"ok", "needs_auth", "forbidden", "not_found", "error"}
     if rep.payload["status"] != "ok":
         assert "bill_diff" not in rep.payload and "quota" not in rep.payload
 

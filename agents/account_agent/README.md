@@ -22,7 +22,7 @@ all, and which stored fields answer the question.
 
 **Hard rules (these are graded):**
 
-1. The subscriber ID comes **only** from the verified token. Never from the message text. A user typing someone else's number gets their own data.
+1. The subscriber ID comes **only** from the verified token, never from message text. If an account request names a different or malformed mobile number, return `forbidden` without reading account data. The verified subscriber may name their own number.
 2. The runtime database connection is **read-only** and you can prove it with a failed write.
 3. All SQL is parameterised. No string-built SQL anywhere.
 4. Bill maths is pure Python in `bill_diff.py`. The LLM receives amounts and item descriptions, never name, number or NIC.
@@ -241,7 +241,7 @@ python run_all.py                                       # full system, log in fr
 | 3 | Account question with no token (direct call to :8002) | `needs_auth` |
 | 4 | Tampered JWT (change one character) | `needs_auth` |
 | 5 | Expired JWT | `needs_auth` |
-| 6 | Another subscriber's number typed in the message while logged in | Own data only |
+| 6 | Another subscriber's number typed in the message while logged in | `forbidden`; no account lookup or data returned |
 | 7 | Request an OTP 6 times in a minute | 429 on the 6th |
 | 8 | OTP 4th attempt | 401 |
 | 9 | OTP after 5 minutes | 401 |

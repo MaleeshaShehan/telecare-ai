@@ -200,7 +200,7 @@ Done: everything in section 5 marked M1. Remaining:
 
 Full detail with JSON examples: `docs/message_protocol.md`.
 
-- **Envelope**: message_id, conversation_id, sender_agent, receiver_agent, intent, payload, auth_token, timestamp. Replies put `status` in payload: `ok | needs_auth | not_found | escalate | error`.
+- **Envelope**: message_id, conversation_id, sender_agent, receiver_agent, intent, payload, auth_token, timestamp. Replies put `status` in payload: `ok | needs_auth | forbidden | not_found | escalate | error`.
 - **Intents**: package_info, tariff_query, roaming_advice, coverage_or_outage_info, troubleshooting, plan_advice → Knowledge · bill_enquiry, quota_check → Account (login) · complaint → Supervisor · out_of_scope → Orchestrator.
 - **Supervisor tasks**: `assess {message, intent, failed_count}` → `{sentiment, score, escalate, reason, priority}` · `escalate {history, reason, priority}` → `{ticket_id, answer}`.
 - **Escalation rules**: VADER ≤ −0.5 → high; borderline → LLM confirm; "human/agent/manager/call me" → normal; intent complaint → always; 2 consecutive not_found/error → normal.

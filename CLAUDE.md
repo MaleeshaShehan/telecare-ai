@@ -18,7 +18,7 @@ Read it before starting any new component.
 - Agents talk with the `Envelope` model in `shared/envelope.py` (8 fields:
   message_id, conversation_id, sender_agent, receiver_agent, intent, payload,
   auth_token, timestamp). Replies put `status` + results in `payload`.
-  Status values: ok | needs_auth | not_found | escalate | error.
+  Status values: ok | needs_auth | forbidden | not_found | escalate | error.
 - Every specialist endpoint requires the `X-Internal-Key` header (from `.env`).
 - Agent communication is API-based (HTTP + JSON envelope). We do NOT use MCP.
 
@@ -32,6 +32,7 @@ Read it before starting any new component.
 - Login is passwordless: a known mobile number requests a backend-generated SMS OTP.
   OTPs are hashed, expire after five minutes, allow three attempts, and are single-use.
 - The subscriber ID always comes from the verified JWT, never from message text.
+- An authenticated account request that explicitly names a different or malformed mobile number is denied before account data is read.
 - All SQL is parameterised (`?`). No string-built SQL anywhere.
 - Bill numbers are computed in Python (`bill_diff.py`); the LLM only phrases them.
 - Every outgoing LLM prompt goes through `shared/llm.py`, which masks PII.

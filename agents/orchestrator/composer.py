@@ -41,6 +41,10 @@ REFUSAL_INJECTION = "I can only help with telecom questions about packages, roam
 REFUSAL_OUT_OF_SCOPE = "Sorry, that is outside what I can help with. I handle telecom questions only."
 CLARIFY = "Could you tell me a little more? For example, is this about a package, roaming, coverage, or your bill?"
 NEEDS_AUTH = "To look at your account I need you to log in first. Please use the login panel on the left."
+ACCOUNT_PRIVACY_REFUSAL = (
+    "I can only provide account details for the mobile number you verified when you logged in. "
+    "I can't access or disclose details for another number."
+)
 NOT_FOUND = "I don't have that information in our documents. Would you like me to connect you to a human agent?"
 ERROR = "Sorry, something went wrong on my side. Would you like me to connect you to a human agent?"
 SLOW_DOWN = "You're sending messages very quickly. Please slow down and try again in a moment."
@@ -77,6 +81,8 @@ def compose(conversation_id: str, reply: Envelope) -> dict:
         return finish(conversation_id, reply.payload.get("answer", ""), "ok", reply.payload.get("sources", []), extra)
     if status == "needs_auth":
         return finish(conversation_id, NEEDS_AUTH, "needs_auth")
+    if status == "forbidden":
+        return finish(conversation_id, ACCOUNT_PRIVACY_REFUSAL, "forbidden")
     if status == "not_found":
         return finish(conversation_id, NOT_FOUND, "not_found")
     if status == "escalate":
