@@ -33,7 +33,7 @@ MONTH_NAME = "|".join(sorted(MONTHS, key=len, reverse=True))
 NAMED_MONTH_RE = re.compile(
     rf"\b(?:for|from|in|of)\s+({MONTH_NAME})(?:\s+(20\d{{2}}))?\b"
     rf"|\b({MONTH_NAME})\s+(20\d{{2}})\b"
-    rf"|\b({MONTH_NAME})\s+(?:bill|invoice)\b",
+    rf"|\b({MONTH_NAME})(?:\s+month(?:'s)?)?\s+(?:bill|invoice)\b",
     re.IGNORECASE,
 )
 BILL_WORDS = ("bill", "invoice", "charged", "charges")
@@ -211,7 +211,9 @@ def classify(message: str) -> dict:
         return classify_keywords(message)
     entities = extract_entities(message)
     for key, value in result.entities.items():
-        if value is not None:
+        # Deterministic extraction is authoritative. The LLM may fill gaps,
+        # but must not replace an explicit month parsed from the message.
+        if value is not None and not entities.get(key):
             entities[key] = value
     if _is_month_bill_request(message, entities):
         intent = Intent.BILL_BY_MONTH
