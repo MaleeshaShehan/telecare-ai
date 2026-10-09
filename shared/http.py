@@ -44,6 +44,9 @@ def call_agent(env: Envelope) -> Envelope:
 
 
 def require_internal_key(x_internal_key: str = Header(default="")) -> None:
-    """FastAPI dependency: reject any specialist call without the shared key."""
-    if x_internal_key != settings.internal_api_key:
+    """FastAPI dependency: reject any specialist call without the shared key.
+
+    An empty configured key would make an empty header "match", so an empty key
+    is treated as misconfiguration and every call is refused (fail closed)."""
+    if not settings.internal_api_key or x_internal_key != settings.internal_api_key:
         raise HTTPException(status_code=401, detail="missing or invalid internal key")

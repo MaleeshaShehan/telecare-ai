@@ -9,8 +9,31 @@ failed-answer counter and attaches the audit trace.
 """
 from shared.audit import get_trace, log_decision
 from shared.envelope import Envelope
+from shared.security import contains_prompt_leak, register_system_prompt
 
 from agents.orchestrator import session
+
+# Output guard: register every system prompt the agents use so a reply that quotes
+# one is caught before it reaches the user. Imports are best-effort so a missing
+# agent module never breaks the Orchestrator.
+def _register_known_prompts() -> None:
+    try:
+        from agents.orchestrator.nlu import NLU_SYSTEM
+        register_system_prompt(NLU_SYSTEM)
+    except Exception:
+        pass
+    for mod, names in (("agents.knowledge_agent.prompts", ("GROUNDED_SYSTEM", "PLAN_ADVICE_SYSTEM", "QUERY_REWRITE_SYSTEM")),
+                       ("agents.account_agent.prompts", ("BILL_EXPLAIN_SYSTEM",))):
+        try:
+            m = __import__(mod, fromlist=list(names))
+            for n in names:
+                register_system_prompt(getattr(m, n, ""))
+        except Exception:
+            pass
+
+
+_register_known_prompts()
+LEAK_REFUSAL = "I can't share that. Is there something about your plan, roaming, coverage or bill I can help with?"
 
 AI_DISCLOSURE = "Hi, I'm TeleCare's AI assistant. "
 
@@ -28,6 +51,9 @@ def finish(conversation_id: str, reply: str, status: str, sources: list | None =
     """`extra` carries structured data the UI renders as cards, e.g.
     bill_diff from the Account Agent or ticket_id from the Supervisor."""
     state = session.get(conversation_id)
+    if contains_prompt_leak(reply):
+        log_decision(conversation_id, "orchestrator", "prompt_leak_blocked", "reply quoted a system prompt")
+        reply, sources, extra = LEAK_REFUSAL, [], {}
     if not state["disclosed"]:
         reply = AI_DISCLOSURE + reply
         state["disclosed"] = True

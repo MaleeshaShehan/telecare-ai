@@ -18,7 +18,7 @@ from shared.audit import log_decision
 from shared.envelope import Envelope
 from shared.http import call_agent
 from shared.intents import AUTH_REQUIRED, INTENT_OWNER, Intent
-from shared.security import is_injection, sanitize
+from shared.security import injection_findings, sanitize
 
 from agents.orchestrator import composer, nlu, session
 
@@ -33,10 +33,15 @@ def handle_message(conversation_id: str, raw_message: str) -> dict:
     if not message:
         return composer.finish(conversation_id, composer.CLARIFY, "ok")
 
-    # 3. Injection check
-    if is_injection(message):
-        log_decision(conversation_id, "orchestrator", "injection_blocked", "pattern match")
+    # 3. Injection check (normalised, rule-scored; the rule names explain the refusal)
+    finding = injection_findings(message)
+    if finding.blocked:
+        log_decision(conversation_id, "orchestrator", "injection_blocked",
+                     f"score={finding.score:.1f} rules={','.join(finding.rules)}")
         return composer.finish(conversation_id, composer.REFUSAL_INJECTION, "ok")
+    if finding.rules:  # suspicious but under the threshold: record it, let it through
+        log_decision(conversation_id, "orchestrator", "injection_suspected",
+                     f"score={finding.score:.1f} rules={','.join(finding.rules)}")
 
     session.add_turn(conversation_id, "user", message)
 
