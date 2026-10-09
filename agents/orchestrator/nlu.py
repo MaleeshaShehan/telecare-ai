@@ -11,6 +11,7 @@ where method is "llm" or "keywords" (shown in the agent trace).
 """
 import json
 import re
+from datetime import date
 
 from pydantic import BaseModel, Field, ValidationError
 
@@ -19,6 +20,34 @@ from shared.intents import Intent
 
 PHONE_RE = re.compile(r"(?:\+94|0)7\d{8}")
 AMOUNT_RE = re.compile(r"Rs\.?\s?[\d,]+")
+YEAR_MONTH_RE = re.compile(r"\b(20\d{2})[-/](0?[1-9]|1[0-2])\b")
+MONTHS = {
+    "jan": 1, "january": 1, "feb": 2, "february": 2,
+    "mar": 3, "march": 3, "apr": 4, "april": 4,
+    "may": 5, "jun": 6, "june": 6, "jul": 7, "july": 7,
+    "aug": 8, "august": 8, "sep": 9, "sept": 9, "september": 9,
+    "oct": 10, "october": 10, "nov": 11, "november": 11,
+    "dec": 12, "december": 12,
+}
+MONTH_NAME = "|".join(sorted(MONTHS, key=len, reverse=True))
+NAMED_MONTH_RE = re.compile(
+    rf"\b(?:for|from|in|of)\s+({MONTH_NAME})(?:\s+(20\d{{2}}))?\b"
+    rf"|\b({MONTH_NAME})\s+(20\d{{2}})\b"
+    rf"|\b({MONTH_NAME})(?:\s+month(?:'s)?)?\s+(?:bill|invoice)\b",
+    re.IGNORECASE,
+)
+BILL_WORDS = ("bill", "invoice", "charged", "charges")
+ACTIVE_PACKAGE_PHRASES = (
+    "my active package",
+    "my current package",
+    "my package details",
+    "what package am i on",
+    "which package am i on",
+    "my active plan",
+    "my current plan",
+    "what plan am i on",
+    "which plan am i on",
+)
 
 # ---------------------------------------------------------------- LLM path
 
@@ -42,6 +71,7 @@ NLU_SCHEMA = {
                 "package_name": {"type": ["string", "null"]},
                 "country": {"type": ["string", "null"]},
                 "data_amount": {"type": ["string", "null"]},
+                "billing_period": {"type": ["string", "null"]},
             },
         },
         "needs_clarification": {"type": "boolean"},
@@ -52,7 +82,9 @@ NLU_SYSTEM = (
     "You are the intent classifier for a telecom customer-care assistant. "
     "Classify the customer's message into exactly one intent from this list: "
     + ", ".join(i.value for i in Intent)
-    + ". Extract entities package_name, country and data_amount (null if absent). "
+    + ". Extract entities package_name, country, data_amount and billing_period. "
+    "billing_period must be YYYY-MM when the customer names a billing month, otherwise null. "
+    "Use bill_by_month for a bill or invoice request naming a specific month. "
     "Set needs_clarification true only if the message is too vague to route. "
     "Return strict JSON with keys intent, confidence (0-1), entities, needs_clarification. "
     "No prose."
@@ -98,6 +130,7 @@ def extract_entities(message: str) -> dict:
         "country": None,
         "package_name": None,
         "data_amount": None,
+        "billing_period": extract_billing_period(message),
     }
     nlp = _spacy()
     if nlp:
@@ -106,6 +139,35 @@ def extract_entities(message: str) -> dict:
         gpes = [e.text for e in doc.ents if e.label_ == "GPE"]
         ents["country"] = gpes[0] if gpes else None
     return ents
+
+
+def extract_billing_period(message: str, today: date | None = None) -> str | None:
+    """Return an explicit billing month as YYYY-MM without depending on spaCy."""
+    numeric = YEAR_MONTH_RE.search(message)
+    if numeric:
+        return f"{int(numeric.group(1)):04d}-{int(numeric.group(2)):02d}"
+
+    named = NAMED_MONTH_RE.search(message)
+    if not named:
+        return None
+    month_name = next(value for value in (named.group(1), named.group(3), named.group(5)) if value)
+    year_text = named.group(2) or named.group(4)
+    month = MONTHS[month_name.lower()]
+    current = today or date.today()
+    year = int(year_text) if year_text else current.year
+    if not year_text and month > current.month:
+        year -= 1
+    return f"{year:04d}-{month:02d}"
+
+
+def _is_month_bill_request(message: str, entities: dict) -> bool:
+    lowered = message.lower()
+    return bool(entities.get("billing_period")) and any(word in lowered for word in BILL_WORDS)
+
+
+def _is_active_package_request(message: str) -> bool:
+    lowered = message.lower()
+    return any(phrase in lowered for phrase in ACTIVE_PACKAGE_PHRASES)
 
 # ---------------------------------------------------- keyword fallback
 
@@ -125,11 +187,18 @@ KEYWORDS: list[tuple[Intent, tuple[str, ...]]] = [
 
 def classify_keywords(message: str) -> dict:
     lowered = message.lower()
+    entities = extract_entities(message)
+    if _is_month_bill_request(message, entities):
+        return {"intent": Intent.BILL_BY_MONTH, "confidence": 0.8, "entities": entities,
+                "needs_clarification": False, "method": "keywords"}
+    if _is_active_package_request(message):
+        return {"intent": Intent.ACTIVE_PACKAGE_DETAILS, "confidence": 0.8, "entities": entities,
+                "needs_clarification": False, "method": "keywords"}
     for intent, words in KEYWORDS:
         if any(w in lowered for w in words):
-            return {"intent": intent, "confidence": 0.6, "entities": extract_entities(message),
+            return {"intent": intent, "confidence": 0.6, "entities": entities,
                     "needs_clarification": False, "method": "keywords"}
-    return {"intent": Intent.OUT_OF_SCOPE, "confidence": 0.5, "entities": extract_entities(message),
+    return {"intent": Intent.OUT_OF_SCOPE, "confidence": 0.5, "entities": entities,
             "needs_clarification": False, "method": "keywords"}
 
 # ------------------------------------------------------------- public
@@ -142,7 +211,15 @@ def classify(message: str) -> dict:
         return classify_keywords(message)
     entities = extract_entities(message)
     for key, value in result.entities.items():
-        if value is not None:
+        # Deterministic extraction is authoritative. The LLM may fill gaps,
+        # but must not replace an explicit month parsed from the message.
+        if value is not None and not entities.get(key):
             entities[key] = value
-    return {"intent": result.intent, "confidence": result.confidence, "entities": entities,
+    if _is_month_bill_request(message, entities):
+        intent = Intent.BILL_BY_MONTH
+    elif _is_active_package_request(message):
+        intent = Intent.ACTIVE_PACKAGE_DETAILS
+    else:
+        intent = result.intent
+    return {"intent": intent, "confidence": result.confidence, "entities": entities,
             "needs_clarification": result.needs_clarification, "method": "llm"}

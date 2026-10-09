@@ -6,6 +6,7 @@ __pycache__/
 *.pyc
 .venv/
 .pytest_cache/
+.pytest-tmp-*/
 
 # Generated data (rebuild with seed.py / ingest.py)
 data/chroma/

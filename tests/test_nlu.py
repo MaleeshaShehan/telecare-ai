@@ -2,6 +2,7 @@
 from agents.orchestrator import nlu
 from shared import llm
 from shared.intents import Intent
+from datetime import date
 
 
 def test_mock_provider_falls_back_to_keywords():
@@ -9,6 +10,40 @@ def test_mock_provider_falls_back_to_keywords():
     out = nlu.classify("roaming rates for India")
     assert out["method"] == "keywords"
     assert out["intent"] == Intent.ROAMING_ADVICE
+
+
+def test_month_specific_bill_is_classified_and_normalized():
+    out = nlu.classify_keywords("Show me my bill for September 2026")
+    assert out["intent"] == Intent.BILL_BY_MONTH
+    assert out["entities"]["billing_period"] == "2026-09"
+    natural = nlu.classify_keywords(
+        "i need to know my september month bill ?"
+    )
+    assert natural["intent"] == Intent.BILL_BY_MONTH
+    assert natural["entities"]["billing_period"] == "2026-09"
+    assert nlu.extract_billing_period("invoice for 2026/08") == "2026-08"
+    assert nlu.extract_billing_period("May I see my bill?", date(2026, 10, 9)) is None
+
+
+def test_explicit_billing_month_wins_over_llm_year_guess(monkeypatch):
+    monkeypatch.setattr(llm, "generate", lambda *a, **k: {
+        "intent": "bill_enquiry",
+        "confidence": 0.91,
+        "entities": {"billing_period": "2023-09"},
+        "needs_clarification": False,
+    })
+    out = nlu.classify("i need to know my september month bill ?")
+    current = date.today()
+    expected_year = current.year if current.month >= 9 else current.year - 1
+    assert out["intent"] == Intent.BILL_BY_MONTH
+    assert out["entities"]["billing_period"] == f"{expected_year}-09"
+
+
+def test_active_package_request_is_account_specific():
+    assert nlu.classify_keywords("What is my active package?")["intent"] == Intent.ACTIVE_PACKAGE_DETAILS
+    assert nlu.classify_keywords("What plan am I on?")["intent"] == Intent.ACTIVE_PACKAGE_DETAILS
+    assert nlu.classify_keywords("What packages are available?")["intent"] == Intent.PACKAGE_INFO
+    assert nlu.classify_keywords("Which plan suits me?")["intent"] == Intent.PLAN_ADVICE
 
 
 def test_valid_llm_json_is_used(monkeypatch):
